@@ -12,4 +12,4 @@
 #include "xgc2_observer/status.hpp"
 #include "xgc2_observer/time_delta.hpp"
 
-#endif  // XGC2_OBSERVER_OBSERVER_HPP
+#endif // XGC2_OBSERVER_OBSERVER_HPP

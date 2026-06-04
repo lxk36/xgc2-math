@@ -19,18 +19,14 @@ struct PositionVelocityObserverOptions {
     double max_velocity{std::numeric_limits<double>::infinity()};
 };
 
-inline bool isValid(const PositionVelocityObserverOptions& options)
-{
+inline bool isValid(const PositionVelocityObserverOptions& options) {
     return std::isfinite(options.position_gain) && options.position_gain >= 0.0 &&
-           std::isfinite(options.velocity_gain) && options.velocity_gain >= 0.0 &&
-           std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 &&
-           std::isfinite(options.max_dt_s) && options.max_dt_s >= options.min_dt_s &&
-           isNonnegativeLimit(options.max_position_residual) &&
-           isNonnegativeLimit(options.max_velocity);
+           std::isfinite(options.velocity_gain) && options.velocity_gain >= 0.0 && std::isfinite(options.min_dt_s) &&
+           options.min_dt_s > 0.0 && std::isfinite(options.max_dt_s) && options.max_dt_s >= options.min_dt_s &&
+           isNonnegativeLimit(options.max_position_residual) && isNonnegativeLimit(options.max_velocity);
 }
 
-inline PositionVelocityObserverOptions normalized(PositionVelocityObserverOptions options)
-{
+inline PositionVelocityObserverOptions normalized(PositionVelocityObserverOptions options) {
     const PositionVelocityObserverOptions defaults;
     if (!std::isfinite(options.position_gain) || options.position_gain < 0.0) {
         options.position_gain = defaults.position_gain;
@@ -62,40 +58,29 @@ struct PositionVelocityEstimate {
 };
 
 class PositionVelocityLuenbergerObserver {
-public:
+  public:
     PositionVelocityLuenbergerObserver() = default;
 
-    explicit PositionVelocityLuenbergerObserver(PositionVelocityObserverOptions options)
-        : options_(normalized(options))
-    {
-    }
+    explicit PositionVelocityLuenbergerObserver(const PositionVelocityObserverOptions& options)
+        : options_(normalized(options)) {}
 
-    void setOptions(PositionVelocityObserverOptions options)
-    {
-        options_ = normalized(options);
-    }
+    void setOptions(const PositionVelocityObserverOptions& options) { options_ = normalized(options); }
 
-    const PositionVelocityObserverOptions& options() const
-    {
-        return options_;
-    }
+    const PositionVelocityObserverOptions& options() const { return options_; }
 
-    void reset()
-    {
+    void reset() {
         initialized_ = false;
         position_ = 0.0;
         velocity_ = 0.0;
     }
 
-    void reset(double position, double velocity = 0.0)
-    {
+    void reset(double position, double velocity = 0.0) {
         initialized_ = true;
         position_ = position;
         velocity_ = velocity;
     }
 
-    PositionVelocityEstimate update(double measured_position, double dt_s, double acceleration = 0.0)
-    {
+    PositionVelocityEstimate update(double measured_position, double dt_s, double acceleration = 0.0) {
         if (!std::isfinite(measured_position) || !std::isfinite(acceleration)) {
             return estimate(0.0, SampleStatus::kHeldInvalidInput, false);
         }
@@ -127,36 +112,24 @@ public:
         return estimate(residual, SampleStatus::kAccepted, true);
     }
 
-    double position() const
-    {
-        return position_;
-    }
+    double position() const { return position_; }
 
-    double velocity() const
-    {
-        return velocity_;
-    }
+    double velocity() const { return velocity_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
-    bool validDt(double dt_s) const
-    {
+  private:
+    bool validDt(double dt_s) const {
         return std::isfinite(dt_s) && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
     }
 
-    void clampVelocity()
-    {
+    void clampVelocity() {
         if (std::fabs(velocity_) > options_.max_velocity) {
             velocity_ = std::copysign(options_.max_velocity, velocity_);
         }
     }
 
-    PositionVelocityEstimate estimate(double residual, SampleStatus status, bool accepted) const
-    {
+    PositionVelocityEstimate estimate(double residual, SampleStatus status, bool accepted) const {
         PositionVelocityEstimate output;
         output.position = position_;
         output.velocity = velocity_;
@@ -173,40 +146,29 @@ private:
 };
 
 class AngularPositionVelocityLuenbergerObserver {
-public:
+  public:
     AngularPositionVelocityLuenbergerObserver() = default;
 
-    explicit AngularPositionVelocityLuenbergerObserver(PositionVelocityObserverOptions options)
-        : options_(normalized(options))
-    {
-    }
+    explicit AngularPositionVelocityLuenbergerObserver(const PositionVelocityObserverOptions& options)
+        : options_(normalized(options)) {}
 
-    void setOptions(PositionVelocityObserverOptions options)
-    {
-        options_ = normalized(options);
-    }
+    void setOptions(const PositionVelocityObserverOptions& options) { options_ = normalized(options); }
 
-    const PositionVelocityObserverOptions& options() const
-    {
-        return options_;
-    }
+    const PositionVelocityObserverOptions& options() const { return options_; }
 
-    void reset()
-    {
+    void reset() {
         initialized_ = false;
         angle_rad_ = 0.0;
         angular_velocity_rad_s_ = 0.0;
     }
 
-    void reset(double angle_rad, double angular_velocity_rad_s = 0.0)
-    {
+    void reset(double angle_rad, double angular_velocity_rad_s = 0.0) {
         initialized_ = true;
         angle_rad_ = normalizeAngle(angle_rad);
         angular_velocity_rad_s_ = angular_velocity_rad_s;
     }
 
-    PositionVelocityEstimate update(double measured_angle_rad, double dt_s, double angular_acceleration_rad_s2 = 0.0)
-    {
+    PositionVelocityEstimate update(double measured_angle_rad, double dt_s, double angular_acceleration_rad_s2 = 0.0) {
         if (!std::isfinite(measured_angle_rad) || !std::isfinite(angular_acceleration_rad_s2)) {
             return estimate(0.0, SampleStatus::kHeldInvalidInput, false);
         }
@@ -221,8 +183,8 @@ public:
             return estimate(0.0, SampleStatus::kHeldInvalidDt, false);
         }
 
-        const double predicted_angle = normalizeAngle(
-            angle_rad_ + angular_velocity_rad_s_ * dt_s + 0.5 * angular_acceleration_rad_s2 * dt_s * dt_s);
+        const double predicted_angle = normalizeAngle(angle_rad_ + angular_velocity_rad_s_ * dt_s +
+                                                      0.5 * angular_acceleration_rad_s2 * dt_s * dt_s);
         const double predicted_velocity = angular_velocity_rad_s_ + angular_acceleration_rad_s2 * dt_s;
         const double residual = shortestAngularDistance(predicted_angle, normalized_measurement);
 
@@ -240,36 +202,24 @@ public:
         return estimate(residual, SampleStatus::kAccepted, true);
     }
 
-    double position() const
-    {
-        return angle_rad_;
-    }
+    double position() const { return angle_rad_; }
 
-    double velocity() const
-    {
-        return angular_velocity_rad_s_;
-    }
+    double velocity() const { return angular_velocity_rad_s_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
-    bool validDt(double dt_s) const
-    {
+  private:
+    bool validDt(double dt_s) const {
         return std::isfinite(dt_s) && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
     }
 
-    void clampVelocity()
-    {
+    void clampVelocity() {
         if (std::fabs(angular_velocity_rad_s_) > options_.max_velocity) {
             angular_velocity_rad_s_ = std::copysign(options_.max_velocity, angular_velocity_rad_s_);
         }
     }
 
-    PositionVelocityEstimate estimate(double residual, SampleStatus status, bool accepted) const
-    {
+    PositionVelocityEstimate estimate(double residual, SampleStatus status, bool accepted) const {
         PositionVelocityEstimate output;
         output.position = angle_rad_;
         output.velocity = angular_velocity_rad_s_;
@@ -285,6 +235,6 @@ private:
     bool initialized_{false};
 };
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_LUENBERGER_OBSERVER_HPP
+#endif // XGC2_OBSERVER_LUENBERGER_OBSERVER_HPP

@@ -17,26 +17,17 @@ struct ScalarRecursiveLeastSquaresOptions {
     double max_covariance{1.0e9};
 };
 
-inline bool isValid(const ScalarRecursiveLeastSquaresOptions& options)
-{
-    return std::isfinite(options.forgetting_factor) &&
-           options.forgetting_factor > 0.0 &&
-           options.forgetting_factor <= 1.0 &&
-           std::isfinite(options.initial_covariance) &&
-           options.initial_covariance > 0.0 &&
-           std::isfinite(options.min_abs_regressor) &&
-           options.min_abs_regressor >= 0.0 &&
-           std::isfinite(options.min_covariance) &&
-           options.min_covariance > 0.0 &&
-           std::isfinite(options.max_covariance) &&
-           options.max_covariance >= options.min_covariance;
+inline bool isValid(const ScalarRecursiveLeastSquaresOptions& options) {
+    return std::isfinite(options.forgetting_factor) && options.forgetting_factor > 0.0 &&
+           options.forgetting_factor <= 1.0 && std::isfinite(options.initial_covariance) &&
+           options.initial_covariance > 0.0 && std::isfinite(options.min_abs_regressor) &&
+           options.min_abs_regressor >= 0.0 && std::isfinite(options.min_covariance) && options.min_covariance > 0.0 &&
+           std::isfinite(options.max_covariance) && options.max_covariance >= options.min_covariance;
 }
 
-inline ScalarRecursiveLeastSquaresOptions normalized(ScalarRecursiveLeastSquaresOptions options)
-{
+inline ScalarRecursiveLeastSquaresOptions normalized(ScalarRecursiveLeastSquaresOptions options) {
     const ScalarRecursiveLeastSquaresOptions defaults;
-    if (!std::isfinite(options.forgetting_factor) ||
-        options.forgetting_factor <= 0.0 ||
+    if (!std::isfinite(options.forgetting_factor) || options.forgetting_factor <= 0.0 ||
         options.forgetting_factor > 1.0) {
         options.forgetting_factor = defaults.forgetting_factor;
     }
@@ -49,8 +40,7 @@ inline ScalarRecursiveLeastSquaresOptions normalized(ScalarRecursiveLeastSquares
     if (!std::isfinite(options.min_covariance) || options.min_covariance <= 0.0) {
         options.min_covariance = defaults.min_covariance;
     }
-    if (!std::isfinite(options.max_covariance) ||
-        options.max_covariance < options.min_covariance) {
+    if (!std::isfinite(options.max_covariance) || options.max_covariance < options.min_covariance) {
         options.max_covariance = std::max(defaults.max_covariance, options.min_covariance);
     }
     return options;
@@ -66,49 +56,40 @@ struct ScalarRecursiveLeastSquaresSample {
 };
 
 class ScalarRecursiveLeastSquares {
-public:
+  public:
     ScalarRecursiveLeastSquares() = default;
 
-    explicit ScalarRecursiveLeastSquares(ScalarRecursiveLeastSquaresOptions options)
-        : options_(normalized(options))
-    {
+    explicit ScalarRecursiveLeastSquares(const ScalarRecursiveLeastSquaresOptions& options)
+        : options_(normalized(options)) {
         covariance_ = options_.initial_covariance;
     }
 
-    void setOptions(ScalarRecursiveLeastSquaresOptions options)
-    {
+    void setOptions(const ScalarRecursiveLeastSquaresOptions& options) {
         options_ = normalized(options);
         covariance_ = clampCovariance(covariance_);
     }
 
-    const ScalarRecursiveLeastSquaresOptions& options() const
-    {
-        return options_;
-    }
+    const ScalarRecursiveLeastSquaresOptions& options() const { return options_; }
 
-    void reset()
-    {
+    void reset() {
         initialized_ = false;
         parameter_ = 0.0;
         covariance_ = clampCovariance(options_.initial_covariance);
     }
 
-    void reset(double initial_parameter)
-    {
+    void reset(double initial_parameter) {
         initialized_ = std::isfinite(initial_parameter);
         parameter_ = initialized_ ? initial_parameter : 0.0;
         covariance_ = clampCovariance(options_.initial_covariance);
     }
 
-    void reset(double initial_parameter, double initial_covariance)
-    {
+    void reset(double initial_parameter, double initial_covariance) {
         initialized_ = std::isfinite(initial_parameter);
         parameter_ = initialized_ ? initial_parameter : 0.0;
         covariance_ = clampCovariance(initial_covariance);
     }
 
-    ScalarRecursiveLeastSquaresSample update(double measurement, double regressor)
-    {
+    ScalarRecursiveLeastSquaresSample update(double measurement, double regressor) {
         if (!std::isfinite(measurement) || !std::isfinite(regressor)) {
             return sample(0.0, 0.0, SampleStatus::kHeldInvalidInput, false);
         }
@@ -119,8 +100,7 @@ public:
             return sample(0.0, 0.0, SampleStatus::kHeldInvalidInput, false);
         }
 
-        const double denominator =
-            options_.forgetting_factor + regressor * covariance_ * regressor;
+        const double denominator = options_.forgetting_factor + regressor * covariance_ * regressor;
         if (!std::isfinite(denominator) || denominator <= 0.0) {
             return sample(0.0, 0.0, SampleStatus::kHeldInvalidInput, false);
         }
@@ -128,8 +108,7 @@ public:
         const double gain = covariance_ * regressor / denominator;
         const double residual = measurement - regressor * parameter_;
         const double next_parameter = parameter_ + gain * residual;
-        const double next_covariance =
-            (1.0 - gain * regressor) * covariance_ / options_.forgetting_factor;
+        const double next_covariance = (1.0 - gain * regressor) * covariance_ / options_.forgetting_factor;
 
         if (!std::isfinite(next_parameter) || !std::isfinite(next_covariance)) {
             return sample(residual, gain, SampleStatus::kHeldInvalidInput, false);
@@ -140,36 +119,21 @@ public:
         return sample(residual, gain, SampleStatus::kAccepted, true);
     }
 
-    double parameter() const
-    {
-        return parameter_;
-    }
+    double parameter() const { return parameter_; }
 
-    double covariance() const
-    {
-        return covariance_;
-    }
+    double covariance() const { return covariance_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
-    double clampCovariance(double covariance) const
-    {
+  private:
+    double clampCovariance(double covariance) const {
         if (!std::isfinite(covariance) || covariance <= 0.0) {
             return options_.initial_covariance;
         }
         return std::clamp(covariance, options_.min_covariance, options_.max_covariance);
     }
 
-    ScalarRecursiveLeastSquaresSample sample(
-        double residual,
-        double gain,
-        SampleStatus status,
-        bool accepted) const
-    {
+    ScalarRecursiveLeastSquaresSample sample(double residual, double gain, SampleStatus status, bool accepted) const {
         ScalarRecursiveLeastSquaresSample output;
         output.parameter = parameter_;
         output.covariance = covariance_;
@@ -186,6 +150,6 @@ private:
     bool initialized_{false};
 };
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_RECURSIVE_LEAST_SQUARES_HPP
+#endif // XGC2_OBSERVER_RECURSIVE_LEAST_SQUARES_HPP

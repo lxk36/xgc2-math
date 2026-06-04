@@ -1,0 +1,19 @@
+Checks: >
+  -*,
+  clang-analyzer-*,
+  bugprone-*,
+  performance-*,
+  -performance-enum-size,
+  portability-*,
+  modernize-loop-convert,
+  modernize-make-unique,
+  modernize-use-emplace,
+  modernize-use-nullptr,
+  modernize-use-override,
+  cppcoreguidelines-slicing,
+  cppcoreguidelines-virtual-class-destructor
+WarningsAsErrors: '*'
+HeaderFilterRegex: '^(include|src|test)/.*'
+CheckOptions:
+  - key: bugprone-assert-side-effect.AssertMacros
+    value: 'assert'

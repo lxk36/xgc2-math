@@ -9,8 +9,7 @@ namespace xgc2_observer {
 constexpr double kPi = 3.14159265358979323846;
 constexpr double kTwoPi = 2.0 * kPi;
 
-inline double normalizeAnglePositive(double angle_rad)
-{
+inline double normalizeAnglePositive(double angle_rad) {
     if (!std::isfinite(angle_rad)) {
         return angle_rad;
     }
@@ -21,8 +20,7 @@ inline double normalizeAnglePositive(double angle_rad)
     return result;
 }
 
-inline double normalizeAngle(double angle_rad)
-{
+inline double normalizeAngle(double angle_rad) {
     if (!std::isfinite(angle_rad)) {
         return angle_rad;
     }
@@ -33,14 +31,13 @@ inline double normalizeAngle(double angle_rad)
     return result;
 }
 
-inline double shortestAngularDistance(double from_rad, double to_rad)
-{
+inline double shortestAngularDistance(double from_rad, double to_rad) {
     if (!std::isfinite(from_rad) || !std::isfinite(to_rad)) {
         return std::numeric_limits<double>::quiet_NaN();
     }
     return normalizeAngle(to_rad - from_rad);
 }
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_ANGLE_HPP
+#endif // XGC2_OBSERVER_ANGLE_HPP

@@ -27,6 +27,8 @@ if git ls-files 2>/dev/null | grep -E '(^|/)(build|devel|install|\.catkin_tools|
 fi
 
 required_files=(
+  .clang-format
+  .clang-tidy
   README.md
   CMakeLists.txt
   cmake/xgc2_observerConfig.cmake.in
@@ -45,6 +47,7 @@ required_files=(
   .github/workflows/ci.yml
   .xgc2/product.yml
   .xgc2/scripts/build_deb.sh
+  .xgc2/scripts/check_cpp_quality.sh
   .xgc2/scripts/check_package_compliance.sh
   .xgc2/scripts/publish_self_hosted_apt.sh
   .xgc2/scripts/smoke_test_installed.sh
@@ -57,7 +60,7 @@ for file in "${required_files[@]}"; do
   fi
 done
 
-for removed_file in package.xml; do
+for removed_file in package.xml .github/workflows/build-debs.yml; do
   if [[ -e "${removed_file}" ]]; then
     echo "system package must not keep ROS/catkin file: ${removed_file}" >&2
     exit 1

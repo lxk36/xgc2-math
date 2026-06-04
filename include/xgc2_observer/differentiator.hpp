@@ -10,8 +10,7 @@
 
 namespace xgc2_observer {
 
-inline bool isNonnegativeLimit(double value)
-{
+inline bool isNonnegativeLimit(double value) {
     return std::isinf(value) || (std::isfinite(value) && value >= 0.0);
 }
 
@@ -24,17 +23,14 @@ struct DifferentiatorOptions {
     bool reset_on_large_dt{false};
 };
 
-inline bool isValid(const DifferentiatorOptions& options)
-{
-    return std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 &&
-           std::isfinite(options.max_dt_s) && options.max_dt_s >= options.min_dt_s &&
-           isNonnegativeLimit(options.max_input_step) &&
-           isNonnegativeLimit(options.max_derivative) &&
-           std::isfinite(options.derivative_cutoff_hz) && options.derivative_cutoff_hz >= 0.0;
+inline bool isValid(const DifferentiatorOptions& options) {
+    return std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 && std::isfinite(options.max_dt_s) &&
+           options.max_dt_s >= options.min_dt_s && isNonnegativeLimit(options.max_input_step) &&
+           isNonnegativeLimit(options.max_derivative) && std::isfinite(options.derivative_cutoff_hz) &&
+           options.derivative_cutoff_hz >= 0.0;
 }
 
-inline DifferentiatorOptions normalized(DifferentiatorOptions options)
-{
+inline DifferentiatorOptions normalized(DifferentiatorOptions options) {
     const DifferentiatorOptions defaults;
     if (!std::isfinite(options.min_dt_s) || options.min_dt_s <= 0.0) {
         options.min_dt_s = defaults.min_dt_s;
@@ -62,43 +58,33 @@ struct DifferentiatorSample {
 };
 
 class Differentiator {
-public:
+  public:
     Differentiator() = default;
 
-    explicit Differentiator(DifferentiatorOptions options)
-        : options_(normalized(options))
-    {
-    }
+    explicit Differentiator(const DifferentiatorOptions& options) : options_(normalized(options)) {}
 
-    void setOptions(DifferentiatorOptions options)
-    {
+    void setOptions(const DifferentiatorOptions& options) {
         options_ = normalized(options);
         derivative_filter_.reset(options_.derivative_cutoff_hz, derivative_);
     }
 
-    const DifferentiatorOptions& options() const
-    {
-        return options_;
-    }
+    const DifferentiatorOptions& options() const { return options_; }
 
-    void reset()
-    {
+    void reset() {
         initialized_ = false;
         value_ = 0.0;
         derivative_ = 0.0;
         derivative_filter_.reset(options_.derivative_cutoff_hz, 0.0);
     }
 
-    void reset(double value, double derivative = 0.0)
-    {
+    void reset(double value, double derivative = 0.0) {
         initialized_ = true;
         value_ = value;
         derivative_ = derivative;
         derivative_filter_.reset(options_.derivative_cutoff_hz, derivative);
     }
 
-    DifferentiatorSample update(double value, double dt_s)
-    {
+    DifferentiatorSample update(double value, double dt_s) {
         if (!std::isfinite(value)) {
             return sample(SampleStatus::kHeldInvalidInput, false);
         }
@@ -127,35 +113,23 @@ public:
         }
 
         value_ = value;
-        derivative_ = options_.derivative_cutoff_hz > 0.0
-                          ? derivative_filter_.filter(raw_derivative, dt_s)
-                          : raw_derivative;
+        derivative_ =
+            options_.derivative_cutoff_hz > 0.0 ? derivative_filter_.filter(raw_derivative, dt_s) : raw_derivative;
         return sample(SampleStatus::kAccepted, true);
     }
 
-    double value() const
-    {
-        return value_;
-    }
+    double value() const { return value_; }
 
-    double derivative() const
-    {
-        return derivative_;
-    }
+    double derivative() const { return derivative_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
-    bool validDt(double dt_s) const
-    {
+  private:
+    bool validDt(double dt_s) const {
         return std::isfinite(dt_s) && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
     }
 
-    DifferentiatorSample sample(SampleStatus status, bool accepted) const
-    {
+    DifferentiatorSample sample(SampleStatus status, bool accepted) const {
         DifferentiatorSample output;
         output.value = value_;
         output.derivative = derivative_;
@@ -171,6 +145,6 @@ private:
     bool initialized_{false};
 };
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_DIFFERENTIATOR_HPP
+#endif // XGC2_OBSERVER_DIFFERENTIATOR_HPP

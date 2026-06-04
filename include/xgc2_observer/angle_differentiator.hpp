@@ -9,43 +9,33 @@
 namespace xgc2_observer {
 
 class AngleDifferentiator {
-public:
+  public:
     AngleDifferentiator() = default;
 
-    explicit AngleDifferentiator(DifferentiatorOptions options)
-        : options_(normalized(options))
-    {
-    }
+    explicit AngleDifferentiator(const DifferentiatorOptions& options) : options_(normalized(options)) {}
 
-    void setOptions(DifferentiatorOptions options)
-    {
+    void setOptions(const DifferentiatorOptions& options) {
         options_ = normalized(options);
         derivative_filter_.reset(options_.derivative_cutoff_hz, derivative_);
     }
 
-    const DifferentiatorOptions& options() const
-    {
-        return options_;
-    }
+    const DifferentiatorOptions& options() const { return options_; }
 
-    void reset()
-    {
+    void reset() {
         initialized_ = false;
         angle_rad_ = 0.0;
         derivative_ = 0.0;
         derivative_filter_.reset(options_.derivative_cutoff_hz, 0.0);
     }
 
-    void reset(double angle_rad, double derivative = 0.0)
-    {
+    void reset(double angle_rad, double derivative = 0.0) {
         initialized_ = true;
         angle_rad_ = normalizeAngle(angle_rad);
         derivative_ = derivative;
         derivative_filter_.reset(options_.derivative_cutoff_hz, derivative);
     }
 
-    DifferentiatorSample update(double angle_rad, double dt_s)
-    {
+    DifferentiatorSample update(double angle_rad, double dt_s) {
         if (!std::isfinite(angle_rad)) {
             return sample(SampleStatus::kHeldInvalidInput, false);
         }
@@ -75,35 +65,23 @@ public:
         }
 
         angle_rad_ = normalized_angle;
-        derivative_ = options_.derivative_cutoff_hz > 0.0
-                          ? derivative_filter_.filter(raw_derivative, dt_s)
-                          : raw_derivative;
+        derivative_ =
+            options_.derivative_cutoff_hz > 0.0 ? derivative_filter_.filter(raw_derivative, dt_s) : raw_derivative;
         return sample(SampleStatus::kAccepted, true);
     }
 
-    double value() const
-    {
-        return angle_rad_;
-    }
+    double value() const { return angle_rad_; }
 
-    double derivative() const
-    {
-        return derivative_;
-    }
+    double derivative() const { return derivative_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
-    bool validDt(double dt_s) const
-    {
+  private:
+    bool validDt(double dt_s) const {
         return std::isfinite(dt_s) && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
     }
 
-    DifferentiatorSample sample(SampleStatus status, bool accepted) const
-    {
+    DifferentiatorSample sample(SampleStatus status, bool accepted) const {
         DifferentiatorSample output;
         output.value = angle_rad_;
         output.derivative = derivative_;
@@ -119,6 +97,6 @@ private:
     bool initialized_{false};
 };
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_ANGLE_DIFFERENTIATOR_HPP
+#endif // XGC2_OBSERVER_ANGLE_DIFFERENTIATOR_HPP

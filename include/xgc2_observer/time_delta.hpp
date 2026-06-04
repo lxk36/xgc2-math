@@ -15,14 +15,12 @@ struct TimeDeltaGuardOptions {
     bool reset_on_time_jump_back{true};
 };
 
-inline bool isValid(const TimeDeltaGuardOptions& options)
-{
-    return std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 &&
-           std::isfinite(options.max_dt_s) && options.max_dt_s >= options.min_dt_s;
+inline bool isValid(const TimeDeltaGuardOptions& options) {
+    return std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 && std::isfinite(options.max_dt_s) &&
+           options.max_dt_s >= options.min_dt_s;
 }
 
-inline TimeDeltaGuardOptions normalized(TimeDeltaGuardOptions options)
-{
+inline TimeDeltaGuardOptions normalized(TimeDeltaGuardOptions options) {
     const TimeDeltaGuardOptions defaults;
     if (!std::isfinite(options.min_dt_s) || options.min_dt_s <= 0.0) {
         options.min_dt_s = defaults.min_dt_s;
@@ -41,38 +39,26 @@ struct TimeDeltaSample {
 };
 
 class TimeDeltaGuard {
-public:
+  public:
     TimeDeltaGuard() = default;
 
-    explicit TimeDeltaGuard(TimeDeltaGuardOptions options)
-        : options_(normalized(options))
-    {
-    }
+    explicit TimeDeltaGuard(const TimeDeltaGuardOptions& options) : options_(normalized(options)) {}
 
-    void setOptions(TimeDeltaGuardOptions options)
-    {
-        options_ = normalized(options);
-    }
+    void setOptions(const TimeDeltaGuardOptions& options) { options_ = normalized(options); }
 
-    const TimeDeltaGuardOptions& options() const
-    {
-        return options_;
-    }
+    const TimeDeltaGuardOptions& options() const { return options_; }
 
-    void reset()
-    {
+    void reset() {
         initialized_ = false;
         last_timestamp_s_ = 0.0;
     }
 
-    void reset(double timestamp_s)
-    {
+    void reset(double timestamp_s) {
         initialized_ = std::isfinite(timestamp_s);
         last_timestamp_s_ = initialized_ ? timestamp_s : 0.0;
     }
 
-    TimeDeltaSample update(double timestamp_s)
-    {
+    TimeDeltaSample update(double timestamp_s) {
         if (!std::isfinite(timestamp_s)) {
             return sample(0.0, timestamp_s, SampleStatus::kHeldInvalidInput, false);
         }
@@ -102,19 +88,12 @@ public:
         return sample(dt_s, timestamp_s, SampleStatus::kAccepted, true);
     }
 
-    double lastTimestampS() const
-    {
-        return last_timestamp_s_;
-    }
+    double lastTimestampS() const { return last_timestamp_s_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
-    static TimeDeltaSample sample(double dt_s, double timestamp_s, SampleStatus status, bool accepted)
-    {
+  private:
+    static TimeDeltaSample sample(double dt_s, double timestamp_s, SampleStatus status, bool accepted) {
         TimeDeltaSample output;
         output.dt_s = dt_s;
         output.timestamp_s = timestamp_s;
@@ -128,6 +107,6 @@ private:
     bool initialized_{false};
 };
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_TIME_DELTA_HPP
+#endif // XGC2_OBSERVER_TIME_DELTA_HPP

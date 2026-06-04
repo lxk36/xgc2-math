@@ -12,8 +12,7 @@ enum class SampleStatus {
     kHeldTimeWentBack,
 };
 
-inline const char* toString(SampleStatus status)
-{
+inline const char* toString(SampleStatus status) {
     switch (status) {
     case SampleStatus::kInitialized:
         return "initialized";
@@ -31,16 +30,14 @@ inline const char* toString(SampleStatus status)
     return "unknown";
 }
 
-inline bool measurementAccepted(SampleStatus status)
-{
+inline bool measurementAccepted(SampleStatus status) {
     return status == SampleStatus::kInitialized || status == SampleStatus::kAccepted;
 }
 
-inline bool measurementHeld(SampleStatus status)
-{
+inline bool measurementHeld(SampleStatus status) {
     return !measurementAccepted(status);
 }
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_STATUS_HPP
+#endif // XGC2_OBSERVER_STATUS_HPP

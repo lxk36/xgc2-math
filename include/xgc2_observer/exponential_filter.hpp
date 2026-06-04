@@ -9,33 +9,28 @@
 namespace xgc2_observer {
 
 class ExponentialLowPass {
-public:
+  public:
     ExponentialLowPass() = default;
 
-    explicit ExponentialLowPass(double cutoff_frequency_hz, double initial_value = 0.0)
-    {
+    explicit ExponentialLowPass(double cutoff_frequency_hz, double initial_value = 0.0) {
         reset(cutoff_frequency_hz, initial_value);
     }
 
-    void reset(double cutoff_frequency_hz, double initial_value = 0.0)
-    {
+    void reset(double cutoff_frequency_hz, double initial_value = 0.0) {
         cutoff_frequency_hz_ = std::isfinite(cutoff_frequency_hz) ? std::max(0.0, cutoff_frequency_hz) : 0.0;
         resetState(initial_value);
     }
 
-    void setCutoffFrequencyHz(double cutoff_frequency_hz)
-    {
+    void setCutoffFrequencyHz(double cutoff_frequency_hz) {
         cutoff_frequency_hz_ = std::isfinite(cutoff_frequency_hz) ? std::max(0.0, cutoff_frequency_hz) : 0.0;
     }
 
-    void resetState(double value = 0.0)
-    {
+    void resetState(double value = 0.0) {
         value_ = value;
         initialized_ = true;
     }
 
-    double filter(double input, double dt_s)
-    {
+    double filter(double input, double dt_s) {
         if (!std::isfinite(input)) {
             return value_;
         }
@@ -55,27 +50,18 @@ public:
         return value_;
     }
 
-    double value() const
-    {
-        return value_;
-    }
+    double value() const { return value_; }
 
-    double cutoffFrequencyHz() const
-    {
-        return cutoff_frequency_hz_;
-    }
+    double cutoffFrequencyHz() const { return cutoff_frequency_hz_; }
 
-    bool initialized() const
-    {
-        return initialized_;
-    }
+    bool initialized() const { return initialized_; }
 
-private:
+  private:
     double cutoff_frequency_hz_{0.0};
     double value_{0.0};
     bool initialized_{false};
 };
 
-}  // namespace xgc2_observer
+} // namespace xgc2_observer
 
-#endif  // XGC2_OBSERVER_EXPONENTIAL_FILTER_HPP
+#endif // XGC2_OBSERVER_EXPONENTIAL_FILTER_HPP
