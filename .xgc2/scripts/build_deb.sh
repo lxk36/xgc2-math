@@ -6,7 +6,7 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/../.." && pwd)"
 
 package_name="libxgc2-observer-dev"
-version="${PACKAGE_VERSION:-0.2.0-1}"
+version="${PACKAGE_VERSION:-0.2.1-1}"
 build_dir="${XGC2_OBSERVER_BUILD_DIR:-${repo_root}/.ci/build}"
 stage_dir="${XGC2_OBSERVER_STAGE_DIR:-${repo_root}/.ci/stage}"
 output_dir="${XGC2_OBSERVER_DEB_OUTPUT_DIR:-${repo_root}/.ci/debs}"

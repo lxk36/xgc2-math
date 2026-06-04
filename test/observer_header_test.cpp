@@ -71,13 +71,14 @@ void testOptionNormalization()
     xgc2_observer::DifferentiatorOptions bad_diff_options;
     bad_diff_options.min_dt_s = -1.0;
     bad_diff_options.max_dt_s = -2.0;
+    bad_diff_options.max_input_step = std::numeric_limits<double>::quiet_NaN();
     bad_diff_options.derivative_cutoff_hz = -3.0;
     const auto diff_options = xgc2_observer::normalized(bad_diff_options);
     assert(xgc2_observer::isValid(diff_options));
 
     xgc2_observer::PositionVelocityObserverOptions bad_observer_options;
     bad_observer_options.position_gain = -1.0;
-    bad_observer_options.max_velocity = -1.0;
+    bad_observer_options.max_velocity = std::numeric_limits<double>::quiet_NaN();
     const auto observer_options = xgc2_observer::normalized(bad_observer_options);
     assert(xgc2_observer::isValid(observer_options));
 }

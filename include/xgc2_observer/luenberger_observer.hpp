@@ -25,8 +25,8 @@ inline bool isValid(const PositionVelocityObserverOptions& options)
            std::isfinite(options.velocity_gain) && options.velocity_gain >= 0.0 &&
            std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 &&
            std::isfinite(options.max_dt_s) && options.max_dt_s >= options.min_dt_s &&
-           (!std::isfinite(options.max_position_residual) || options.max_position_residual >= 0.0) &&
-           (!std::isfinite(options.max_velocity) || options.max_velocity >= 0.0);
+           isNonnegativeLimit(options.max_position_residual) &&
+           isNonnegativeLimit(options.max_velocity);
 }
 
 inline PositionVelocityObserverOptions normalized(PositionVelocityObserverOptions options)
@@ -44,10 +44,10 @@ inline PositionVelocityObserverOptions normalized(PositionVelocityObserverOption
     if (!std::isfinite(options.max_dt_s) || options.max_dt_s < options.min_dt_s) {
         options.max_dt_s = std::max(defaults.max_dt_s, options.min_dt_s);
     }
-    if (std::isfinite(options.max_position_residual) && options.max_position_residual < 0.0) {
+    if (!isNonnegativeLimit(options.max_position_residual)) {
         options.max_position_residual = defaults.max_position_residual;
     }
-    if (std::isfinite(options.max_velocity) && options.max_velocity < 0.0) {
+    if (!isNonnegativeLimit(options.max_velocity)) {
         options.max_velocity = defaults.max_velocity;
     }
     return options;

@@ -10,6 +10,11 @@
 
 namespace xgc2_observer {
 
+inline bool isNonnegativeLimit(double value)
+{
+    return std::isinf(value) || (std::isfinite(value) && value >= 0.0);
+}
+
 struct DifferentiatorOptions {
     double min_dt_s{1.0e-4};
     double max_dt_s{0.5};
@@ -23,8 +28,8 @@ inline bool isValid(const DifferentiatorOptions& options)
 {
     return std::isfinite(options.min_dt_s) && options.min_dt_s > 0.0 &&
            std::isfinite(options.max_dt_s) && options.max_dt_s >= options.min_dt_s &&
-           (!std::isfinite(options.max_input_step) || options.max_input_step >= 0.0) &&
-           (!std::isfinite(options.max_derivative) || options.max_derivative >= 0.0) &&
+           isNonnegativeLimit(options.max_input_step) &&
+           isNonnegativeLimit(options.max_derivative) &&
            std::isfinite(options.derivative_cutoff_hz) && options.derivative_cutoff_hz >= 0.0;
 }
 
@@ -37,10 +42,10 @@ inline DifferentiatorOptions normalized(DifferentiatorOptions options)
     if (!std::isfinite(options.max_dt_s) || options.max_dt_s < options.min_dt_s) {
         options.max_dt_s = std::max(defaults.max_dt_s, options.min_dt_s);
     }
-    if (std::isfinite(options.max_input_step) && options.max_input_step < 0.0) {
+    if (!isNonnegativeLimit(options.max_input_step)) {
         options.max_input_step = defaults.max_input_step;
     }
-    if (std::isfinite(options.max_derivative) && options.max_derivative < 0.0) {
+    if (!isNonnegativeLimit(options.max_derivative)) {
         options.max_derivative = defaults.max_derivative;
     }
     if (!std::isfinite(options.derivative_cutoff_hz) || options.derivative_cutoff_hz < 0.0) {
