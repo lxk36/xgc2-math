@@ -9,6 +9,10 @@ option(XGC2_OBSERVER_BUILD_TESTING "Build xgc2_observer tests" ON)
 add_library(xgc2_observer INTERFACE)
 add_library(xgc2_observer::observer ALIAS xgc2_observer)
 
+set_target_properties(xgc2_observer PROPERTIES
+  EXPORT_NAME observer
+)
+
 target_compile_features(xgc2_observer INTERFACE cxx_std_17)
 target_include_directories(xgc2_observer
   INTERFACE
