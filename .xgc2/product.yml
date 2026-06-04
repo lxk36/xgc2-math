@@ -1,0 +1,36 @@
+schema: xgc2.product.v1
+id: libxgc2-observer-dev
+name: XGC2 Observer
+kind: toolchain-apt
+summary: Header-only C++ observer, differentiator, and signal filtering utilities for XGC2 robotics runtime code.
+
+apt:
+  distribution: focal,jammy,noble
+  install:
+    - libxgc2-observer-dev
+  packages:
+    - libxgc2-observer-dev
+  depends:
+    - libc6
+    - libgcc-s1
+    - libstdc++6
+
+usage:
+  install: |
+    sudo apt update
+    sudo apt install libxgc2-observer-dev
+  smoke_test: |
+    cmake --find-package -DNAME=xgc2_observer -DCOMPILER_ID=GNU -DLANGUAGE=CXX -DMODE=EXIST
+  notes: |
+    CMake consumers should use find_package(xgc2_observer REQUIRED CONFIG)
+    and link xgc2_observer::observer. The public include path is
+    <xgc2_observer/observer.hpp>.
+
+ownership:
+  paths:
+    - /usr/include/xgc2_observer
+    - /usr/lib/cmake/xgc2_observer
+
+conflicts:
+  apt_packages:
+    - ros-noetic-xgc2-observer
