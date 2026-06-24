@@ -1390,7 +1390,7 @@ template <typename T> class QuickHull {
                 // Disable the face, but retain pointer to the points that were
                 // on the positive side of it. We need to assign those points to
                 // the new faces we create shortly.
-                auto t = std::move(m_mesh.disableFace(faceIndex));
+                auto t = m_mesh.disableFace(faceIndex);
                 if (t) {
                     // Because we should not assign point vectors to faces unless needed...
                     assert(t->size());
@@ -1617,7 +1617,7 @@ template <typename T> class QuickHull {
  * @brief 从对象池获取索引向量
  */
 template <typename T> inline std::unique_ptr<std::vector<size_t>> QuickHull<T>::getIndexVectorFromPool() {
-    auto r = std::move(m_indexVectorPool.get());
+    auto r = m_indexVectorPool.get();
     r->clear();
     return r;
 }
