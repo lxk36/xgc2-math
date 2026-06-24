@@ -15,6 +15,7 @@
 #include <deque>
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <string>
@@ -36,7 +37,9 @@ template <typename T> class Vector3 {
 
     Vector3(const T& x_value, const T& y_value, const T& z_value) : x(x_value), y(y_value), z(z_value) {}
 
-    T x, y, z; // 三维坐标分量
+    T x{}; // 三维坐标分量
+    T y{};
+    T z{};
 
     /**
      * @brief 计算与另一个向量的点积
@@ -153,10 +156,10 @@ template <typename T> class Plane {
     Vector3<T> m_N; // 平面法向量
 
     // 平面到原点的有符号距离（当法向量长度为1时）
-    T m_D;
+    T m_D{};
 
     // 法向量长度的平方
-    T m_sqrNLength;
+    T m_sqrNLength{};
 
     /**
      * @brief 判断点是否在平面的正侧
@@ -813,15 +816,13 @@ template <typename T> class ConvexHull {
                 faceProcessed[top] = 1;
                 auto halfEdges = mesh.getHalfEdgeIndicesOfFace(mesh.m_faces[top]);
                 // 获取三个相邻面
-                size_t adjacent[] = {mesh.m_halfEdges[mesh.m_halfEdges[halfEdges[0]].m_opp].m_face,
-                                     mesh.m_halfEdges[mesh.m_halfEdges[halfEdges[1]].m_opp].m_face,
-                                     mesh.m_halfEdges[mesh.m_halfEdges[halfEdges[2]].m_opp].m_face};
+                const std::array<size_t, 3> adjacent{mesh.m_halfEdges[mesh.m_halfEdges[halfEdges[0]].m_opp].m_face,
+                                                     mesh.m_halfEdges[mesh.m_halfEdges[halfEdges[1]].m_opp].m_face,
+                                                     mesh.m_halfEdges[mesh.m_halfEdges[halfEdges[2]].m_opp].m_face};
                 // 将未处理的相邻面加入栈
-                for (auto a : adjacent) {
-                    if (!faceProcessed[a] && !mesh.m_faces[a].isDisabled()) {
-                        faceStack.push_back(a);
-                    }
-                }
+                std::copy_if(adjacent.begin(), adjacent.end(), std::back_inserter(faceStack), [&](size_t a) {
+                    return !faceProcessed[a] && !mesh.m_faces[a].isDisabled();
+                });
                 auto vertices = mesh.getVertexIndicesOfFace(mesh.m_faces[top]);
                 if (!useOriginalIndices) {
                     // 为顶点创建新索引
@@ -964,7 +965,7 @@ template <typename T> class QuickHull {
     std::vector<vec3> m_planarPointCloudTemp; // 平面情况下的临时点云
     VertexDataSource<T> m_vertexData;         // 顶点数据源
     MeshBuilder<T> m_mesh;                    // 网格构建器
-    std::array<size_t, 6> m_extremeValues;    // 极值点索引（x最大/最小，y最大/最小，z最大/最小）
+    std::array<size_t, 6> m_extremeValues{};  // 极值点索引（x最大/最小，y最大/最小，z最大/最小）
     DiagnosticsData m_diagnostics;            // 诊断数据
 
     // 迭代过程中使用的临时变量
