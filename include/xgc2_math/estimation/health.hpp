@@ -50,7 +50,7 @@ class ObservationHealthTracker {
         chi_square_window_sum_ = 0.0;
     }
 
-    void setConfig(ObservationHealthConfig config) {
+    void setConfig(const ObservationHealthConfig& config) {
         config_ = config;
         if (config_.window_size == 0u) {
             config_.window_size = ObservationHealthConfig{}.window_size;
@@ -81,12 +81,10 @@ class ObservationHealthTracker {
         if (state_ == VrpnObservationState::kFault) {
             state_ = VrpnObservationState::kRecovery;
         }
-        if (state_ == VrpnObservationState::kRecovery &&
-            consecutive_accepts_ >= config_.recovery_after_accepts) {
+        if (state_ == VrpnObservationState::kRecovery && consecutive_accepts_ >= config_.recovery_after_accepts) {
             state_ = VrpnObservationState::kTrusted;
         }
-        if (state_ == VrpnObservationState::kSuspected &&
-            consecutive_accepts_ >= config_.recovery_after_accepts) {
+        if (state_ == VrpnObservationState::kSuspected && consecutive_accepts_ >= config_.recovery_after_accepts) {
             state_ = VrpnObservationState::kTrusted;
         }
         if (chi_square_window_sum_ > config_.window_chi_square_gate) {

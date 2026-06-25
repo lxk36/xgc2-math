@@ -1,8 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
@@ -340,13 +340,13 @@ class Pose3InertialEskf {
             return FilterHealth::kDegraded;
         }
         switch (vrpn_health_.state()) {
-            case VrpnObservationState::kTrusted:
-                return FilterHealth::kNominal;
-            case VrpnObservationState::kSuspected:
-            case VrpnObservationState::kRecovery:
-                return FilterHealth::kDegraded;
-            case VrpnObservationState::kFault:
-                return FilterHealth::kImuOnly;
+        case VrpnObservationState::kTrusted:
+            return FilterHealth::kNominal;
+        case VrpnObservationState::kSuspected:
+        case VrpnObservationState::kRecovery:
+            return FilterHealth::kDegraded;
+        case VrpnObservationState::kFault:
+            return FilterHealth::kImuOnly;
         }
         return FilterHealth::kLost;
     }
@@ -490,8 +490,7 @@ class Pose3InertialEskf {
         return R;
     }
 
-    MeasurementMatrix measurementJacobian(const Pose3& predicted_marker,
-                                          const MeasurementVector& innovation) const {
+    MeasurementMatrix measurementJacobian(const Pose3& predicted_marker, const MeasurementVector& innovation) const {
         MeasurementMatrix H;
         H.setZero();
         // Jacobian of se3Error(predictedMarker(state), measuredMarker) with the same right
@@ -501,15 +500,13 @@ class Pose3InertialEskf {
         const Eigen::Matrix3d extrinsic_rotation_transpose =
             normalizedQuaternion(state_.body_to_marker.orientation).toRotationMatrix().transpose();
         const Eigen::Vector3d residual_position = innovation.head<3>();
-        const Eigen::Matrix3d residual_position_skew =
-            pose3_inertial_eskf_detail::skewMatrix(residual_position);
+        const Eigen::Matrix3d residual_position_skew = pose3_inertial_eskf_detail::skewMatrix(residual_position);
         const Eigen::Matrix3d marker_offset_skew =
             pose3_inertial_eskf_detail::skewMatrix(state_.body_to_marker.position);
 
         H.block<3, 3>(0, 0) = -marker_rotation_transpose;
         H.block<3, 3>(0, 6) =
-            residual_position_skew * extrinsic_rotation_transpose +
-            extrinsic_rotation_transpose * marker_offset_skew;
+            residual_position_skew * extrinsic_rotation_transpose + extrinsic_rotation_transpose * marker_offset_skew;
         H.block<3, 3>(3, 6) = -extrinsic_rotation_transpose;
 
         return H;
@@ -538,16 +535,6 @@ class Pose3InertialEskf {
                                                      config_.accel_bias_random_walk_std * dt);
         covariance_ = F * covariance_ * F.transpose() + Q;
         covariance_ = 0.5 * (covariance_ + covariance_.transpose());
-    }
-
-    void inflateCovariance(double dt) {
-        ErrorCovariance Q = ErrorCovariance::Zero();
-        Q.block<3, 3>(0, 0).diagonal().setConstant(config_.accel_noise_std * config_.accel_noise_std * dt * dt);
-        Q.block<3, 3>(3, 3).diagonal().setConstant(config_.accel_noise_std * config_.accel_noise_std * dt);
-        Q.block<3, 3>(6, 6).diagonal().setConstant(config_.gyro_noise_std * config_.gyro_noise_std * dt);
-        covariance_ += Q;
-        covariance_ = 0.5 * (covariance_ + covariance_.transpose());
-        state_.covariance_trace = covariance_.trace();
     }
 
     void injectError(const ErrorVector& delta) { injectError(delta, state_); }

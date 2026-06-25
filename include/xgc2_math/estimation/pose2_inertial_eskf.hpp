@@ -1,8 +1,8 @@
 #pragma once
 
 #include <algorithm>
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
 
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
@@ -263,13 +263,13 @@ class Pose2InertialEskf {
             return FilterHealth::kLost;
         }
         switch (vrpn_health_.state()) {
-            case VrpnObservationState::kTrusted:
-                return FilterHealth::kNominal;
-            case VrpnObservationState::kSuspected:
-            case VrpnObservationState::kRecovery:
-                return FilterHealth::kDegraded;
-            case VrpnObservationState::kFault:
-                return FilterHealth::kImuOnly;
+        case VrpnObservationState::kTrusted:
+            return FilterHealth::kNominal;
+        case VrpnObservationState::kSuspected:
+        case VrpnObservationState::kRecovery:
+            return FilterHealth::kDegraded;
+        case VrpnObservationState::kFault:
+            return FilterHealth::kImuOnly;
         }
         return FilterHealth::kLost;
     }
@@ -391,20 +391,17 @@ class Pose2InertialEskf {
         return R;
     }
 
-    MeasurementMatrix measurementJacobian(const Pose2& predicted_marker,
-                                          const Eigen::Vector3d& innovation) const {
+    MeasurementMatrix measurementJacobian(const Pose2& predicted_marker, const Eigen::Vector3d& innovation) const {
         MeasurementMatrix H;
         H.setZero();
         const Eigen::Matrix2d marker_rotation_transpose = rotationMatrix2(predicted_marker.yaw).transpose();
-        const Eigen::Matrix2d extrinsic_rotation_transpose =
-            rotationMatrix2(state_.body_to_marker.yaw).transpose();
+        const Eigen::Matrix2d extrinsic_rotation_transpose = rotationMatrix2(state_.body_to_marker.yaw).transpose();
         const Eigen::Matrix2d yaw_jacobian = pose2_inertial_eskf_detail::yawDerivativeMatrix();
         const Eigen::Vector2d residual_position = innovation.head<2>();
 
         H.block<2, 2>(0, 0) = marker_rotation_transpose;
-        H.block<2, 1>(0, 4) =
-            yaw_jacobian * residual_position +
-            extrinsic_rotation_transpose * yaw_jacobian * state_.body_to_marker.position;
+        H.block<2, 1>(0, 4) = yaw_jacobian * residual_position +
+                              extrinsic_rotation_transpose * yaw_jacobian * state_.body_to_marker.position;
         H(2, 4) = 1.0;
 
         if (config_.estimate_extrinsic) {
@@ -445,16 +442,6 @@ class Pose2InertialEskf {
 
         covariance_ = F * covariance_ * F.transpose() + Q;
         covariance_ = 0.5 * (covariance_ + covariance_.transpose());
-    }
-
-    void inflateCovariance(double dt) {
-        ErrorCovariance Q = ErrorCovariance::Zero();
-        Q.block<2, 2>(0, 0).diagonal().setConstant(config_.accel_noise_std * config_.accel_noise_std * dt * dt);
-        Q.block<2, 2>(2, 2).diagonal().setConstant(config_.accel_noise_std * config_.accel_noise_std * dt);
-        Q(4, 4) = config_.gyro_noise_std * config_.gyro_noise_std * dt;
-        covariance_ += Q;
-        covariance_ = 0.5 * (covariance_ + covariance_.transpose());
-        state_.covariance_trace = covariance_.trace();
     }
 
     void injectError(const ErrorVector& delta) { injectError(delta, state_); }
