@@ -24,6 +24,7 @@ target_link_libraries(my_target PRIVATE xgc2_math::math)
 Component targets are also exported:
 
 - `xgc2_math::utils`
+- `xgc2_math::algebra`
 - `xgc2_math::geometry`
 - `xgc2_math::filter`
 - `xgc2_math::observer`
@@ -36,6 +37,7 @@ Public headers are grouped by domain:
 
 ```text
 /usr/include/xgc2_math/utils/
+/usr/include/xgc2_math/algebra/
 /usr/include/xgc2_math/geometry/
 /usr/include/xgc2_math/filter/
 /usr/include/xgc2_math/observer/

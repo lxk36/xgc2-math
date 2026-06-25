@@ -64,33 +64,38 @@ build_package() {
 
 base_depends="libeigen3-dev, libc6, libgcc-s1, libstdc++6"
 
+algebra_pkg="libxgc2-math-algebra-dev"
+write_control "${algebra_pkg}" "${base_depends}" "XGC2 math algebra headers"
+copy_path "${stage_dir}/usr/include/xgc2_math/algebra" "${pkg_dir}/${algebra_pkg}"
+copy_path "${stage_dir}/usr/include/xgc2_math/algebra.hpp" "${pkg_dir}/${algebra_pkg}"
+
 utils_pkg="libxgc2-math-utils-dev"
 write_control "${utils_pkg}" "${base_depends}" "XGC2 math utils headers"
 copy_path "${stage_dir}/usr/include/xgc2_math/utils" "${pkg_dir}/${utils_pkg}"
 copy_path "${stage_dir}/usr/include/xgc2_math/utils.hpp" "${pkg_dir}/${utils_pkg}"
 
 geometry_pkg="libxgc2-math-geometry-dev"
-write_control "${geometry_pkg}" "libxgc2-math-utils-dev (= ${version}), ${base_depends}" \
+write_control "${geometry_pkg}" "libxgc2-math-algebra-dev (= ${version}), libxgc2-math-utils-dev (= ${version}), ${base_depends}" \
   "XGC2 math geometry headers"
 copy_path "${stage_dir}/usr/include/xgc2_math/geometry" "${pkg_dir}/${geometry_pkg}"
 copy_path "${stage_dir}/usr/include/xgc2_math/geometry.hpp" "${pkg_dir}/${geometry_pkg}"
 
 filter_pkg="libxgc2-math-filter-dev"
-write_control "${filter_pkg}" "libxgc2-math-utils-dev (= ${version}), ${base_depends}" \
+write_control "${filter_pkg}" "libxgc2-math-algebra-dev (= ${version}), libxgc2-math-utils-dev (= ${version}), ${base_depends}" \
   "XGC2 math filter headers"
 copy_path "${stage_dir}/usr/include/xgc2_math/filter" "${pkg_dir}/${filter_pkg}"
 copy_path "${stage_dir}/usr/include/xgc2_math/filter.hpp" "${pkg_dir}/${filter_pkg}"
 
 observer_pkg="libxgc2-math-observer-dev"
 write_control "${observer_pkg}" \
-  "libxgc2-math-utils-dev (= ${version}), libxgc2-math-filter-dev (= ${version}), ${base_depends}" \
+  "libxgc2-math-algebra-dev (= ${version}), libxgc2-math-utils-dev (= ${version}), libxgc2-math-filter-dev (= ${version}), ${base_depends}" \
   "XGC2 math observer headers"
 copy_path "${stage_dir}/usr/include/xgc2_math/observer" "${pkg_dir}/${observer_pkg}"
 copy_path "${stage_dir}/usr/include/xgc2_math/observer.hpp" "${pkg_dir}/${observer_pkg}"
 
 estimation_pkg="libxgc2-math-estimation-dev"
 write_control "${estimation_pkg}" \
-  "libxgc2-math-utils-dev (= ${version}), libxgc2-math-geometry-dev (= ${version}), libxgc2-math-filter-dev (= ${version}), libxgc2-math-observer-dev (= ${version}), ${base_depends}" \
+  "libxgc2-math-algebra-dev (= ${version}), libxgc2-math-utils-dev (= ${version}), libxgc2-math-geometry-dev (= ${version}), libxgc2-math-filter-dev (= ${version}), libxgc2-math-observer-dev (= ${version}), ${base_depends}" \
   "XGC2 math estimation headers"
 copy_path "${stage_dir}/usr/include/xgc2_math/estimation" "${pkg_dir}/${estimation_pkg}"
 copy_path "${stage_dir}/usr/include/xgc2_math/estimation.hpp" "${pkg_dir}/${estimation_pkg}"
@@ -116,13 +121,15 @@ copy_path "${stage_dir}/usr/include/xgc2_math/control.hpp" "${pkg_dir}/${control
 
 meta_pkg="libxgc2-math-dev"
 write_control "${meta_pkg}" \
-  "libxgc2-math-utils-dev (= ${version}), libxgc2-math-geometry-dev (= ${version}), libxgc2-math-filter-dev (= ${version}), libxgc2-math-observer-dev (= ${version}), libxgc2-math-estimation-dev (= ${version}), libxgc2-math-optimization-dev (= ${version}), libxgc2-math-trajectory-dev (= ${version}), libxgc2-math-control-dev (= ${version}), ${base_depends}" \
+  "libxgc2-math-algebra-dev (= ${version}), libxgc2-math-utils-dev (= ${version}), libxgc2-math-geometry-dev (= ${version}), libxgc2-math-filter-dev (= ${version}), libxgc2-math-observer-dev (= ${version}), libxgc2-math-estimation-dev (= ${version}), libxgc2-math-optimization-dev (= ${version}), libxgc2-math-trajectory-dev (= ${version}), libxgc2-math-control-dev (= ${version}), ${base_depends}" \
   "XGC2 math meta development package"
 copy_path "${stage_dir}/usr/include/xgc2_math/math.hpp" "${pkg_dir}/${meta_pkg}"
 copy_path "${stage_dir}/usr/include/xgc2_math/types.hpp" "${pkg_dir}/${meta_pkg}"
 copy_path "${stage_dir}/usr/lib/cmake/xgc2_math" "${pkg_dir}/${meta_pkg}"
 copy_path "${stage_dir}/usr/share/doc/libxgc2-math-dev/matlab" "${pkg_dir}/${meta_pkg}"
 
+test -f "${pkg_dir}/${algebra_pkg}/usr/include/xgc2_math/algebra.hpp"
+test -f "${pkg_dir}/${algebra_pkg}/usr/include/xgc2_math/algebra/angle.hpp"
 test -f "${pkg_dir}/${utils_pkg}/usr/include/xgc2_math/utils/status.hpp"
 test -f "${pkg_dir}/${geometry_pkg}/usr/include/xgc2_math/geometry/se2.hpp"
 test -f "${pkg_dir}/${geometry_pkg}/usr/include/xgc2_math/geometry/occupied_sets/sphere_set.h"
@@ -139,6 +146,7 @@ test -f "${pkg_dir}/${meta_pkg}/usr/include/xgc2_math/math.hpp"
 test -f "${pkg_dir}/${meta_pkg}/usr/lib/cmake/xgc2_math/xgc2_mathConfig.cmake"
 
 for package_name in \
+  "${algebra_pkg}" \
   "${utils_pkg}" \
   "${geometry_pkg}" \
   "${filter_pkg}" \

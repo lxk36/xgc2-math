@@ -10,6 +10,7 @@ apt:
   install:
     - libxgc2-math-dev
   packages:
+    - libxgc2-math-algebra-dev
     - libxgc2-math-utils-dev
     - libxgc2-math-geometry-dev
     - libxgc2-math-filter-dev
@@ -34,7 +35,7 @@ usage:
   notes: |
     CMake consumers should use find_package(xgc2_math REQUIRED CONFIG)
     and link xgc2_math::math or one of the component targets:
-    xgc2_math::utils, xgc2_math::geometry, xgc2_math::filter,
+    xgc2_math::algebra, xgc2_math::utils, xgc2_math::geometry, xgc2_math::filter,
     xgc2_math::observer, xgc2_math::estimation, xgc2_math::optimization,
     xgc2_math::trajectory, xgc2_math::control.
 

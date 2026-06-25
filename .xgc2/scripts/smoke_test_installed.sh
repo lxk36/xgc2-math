@@ -3,6 +3,7 @@
 set -euo pipefail
 
 dpkg -s libxgc2-math-dev >/dev/null
+dpkg -s libxgc2-math-algebra-dev >/dev/null
 dpkg -s libxgc2-math-utils-dev >/dev/null
 dpkg -s libxgc2-math-geometry-dev >/dev/null
 dpkg -s libxgc2-math-filter-dev >/dev/null
@@ -14,6 +15,8 @@ dpkg -s libxgc2-math-control-dev >/dev/null
 
 test -f /usr/include/xgc2_math/math.hpp
 test -f /usr/include/xgc2_math/types.hpp
+test -f /usr/include/xgc2_math/algebra.hpp
+test -f /usr/include/xgc2_math/algebra/angle.hpp
 test -f /usr/include/xgc2_math/geometry/se2.hpp
 test -f /usr/include/xgc2_math/geometry/se3.hpp
 test -f /usr/include/xgc2_math/geometry/occupied_sets/sphere_set.h
