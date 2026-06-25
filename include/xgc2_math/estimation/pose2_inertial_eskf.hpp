@@ -127,8 +127,7 @@ inline void normalize(Pose2InertialEskfConfig& config) {
     config.initial_position_variance = pose2_inertial_eskf_detail::positiveOr(config.initial_position_variance, 0.01);
     config.initial_velocity_variance = pose2_inertial_eskf_detail::positiveOr(config.initial_velocity_variance, 0.1);
     config.initial_yaw_variance = pose2_inertial_eskf_detail::positiveOr(config.initial_yaw_variance, 0.01);
-    config.initial_gyro_bias_variance =
-        pose2_inertial_eskf_detail::positiveOr(config.initial_gyro_bias_variance, 0.01);
+    config.initial_gyro_bias_variance = pose2_inertial_eskf_detail::positiveOr(config.initial_gyro_bias_variance, 0.01);
     config.initial_accel_bias_variance =
         pose2_inertial_eskf_detail::positiveOr(config.initial_accel_bias_variance, 0.1);
     config.initial_extrinsic_position_variance =
@@ -191,7 +190,7 @@ class Pose2InertialEskf {
         state_.last_pose_stamp_sec = pose.stamp_sec;
         state_.last_inertial_stamp_sec =
             inertial != nullptr && pose2_inertial_eskf_detail::validInertialSample(*inertial) ? inertial->stamp_sec
-                                                                                               : pose.stamp_sec;
+                                                                                              : pose.stamp_sec;
         state_.covariance_trace = covariance_.trace();
         state_.initialized = true;
         corrected_body_pose_ = body_world;

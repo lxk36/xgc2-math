@@ -36,8 +36,7 @@ struct Se3NmpcProblemHorizon {
     double stage_dt_s{0.0};
 
     bool validForSteps(int horizon_steps) const {
-        return horizon_steps > 0 && stage_dt_s > 0.0 &&
-               references.size() >= static_cast<size_t>(horizon_steps + 1);
+        return horizon_steps > 0 && stage_dt_s > 0.0 && references.size() >= static_cast<size_t>(horizon_steps + 1);
     }
 };
 
@@ -62,12 +61,11 @@ struct Se3NmpcProblemResult {
 };
 
 class Se3NmpcProblemBackend {
-   public:
+  public:
     virtual ~Se3NmpcProblemBackend() = default;
     virtual bool initialize() = 0;
     virtual void resetWarmStart() = 0;
-    virtual bool solve(const Se3State& initial_state,
-                       const Se3NmpcProblemHorizon& horizon) = 0;
+    virtual bool solve(const Se3State& initial_state, const Se3NmpcProblemHorizon& horizon) = 0;
     virtual Se3NmpcProblemResult result() const = 0;
     virtual int horizonSteps() const = 0;
 };
@@ -109,8 +107,7 @@ inline Eigen::Matrix3d projectRotationToSo3(const Eigen::Matrix3d& value) {
     return projected;
 }
 
-inline Eigen::Vector3d normalizedVectorOr(const Eigen::Vector3d& value,
-                                          const Eigen::Vector3d& fallback) {
+inline Eigen::Vector3d normalizedVectorOr(const Eigen::Vector3d& value, const Eigen::Vector3d& fallback) {
     const double norm = value.norm();
     if (!std::isfinite(norm) || norm < 1.0e-9) {
         return fallback;
@@ -167,5 +164,4 @@ inline Se3Control unpackControl(const Se3ControlVector& value) {
     return control;
 }
 
-}  // namespace xgc2_math::control
-
+} // namespace xgc2_math::control

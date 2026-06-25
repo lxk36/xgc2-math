@@ -1,16 +1,16 @@
 #pragma once
 
-#include "xgc2_math/trajectory/types.hpp"
 #include "xgc2_math/optimization/lbfgs.hpp"
 #include "xgc2_math/optimization/minco.hpp"
 #include "xgc2_math/trajectory/flatness.hpp"
+#include "xgc2_math/trajectory/types.hpp"
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <cstdint>
 #include <memory>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace xgc2_math::trajectory {
 
@@ -62,7 +62,7 @@ struct WaypointConstraint3 {
 };
 
 class TrajectoryEvaluator3 {
-   public:
+  public:
     virtual ~TrajectoryEvaluator3() = default;
     virtual bool evaluate(double t, FlatOutput3& output) const = 0;
     virtual double duration() const = 0;
@@ -79,26 +79,16 @@ struct PolynomialSegment3 {
 };
 
 class PiecewisePolynomialEvaluator3 final : public TrajectoryEvaluator3 {
-   public:
+  public:
     bool setSegments(std::vector<PolynomialSegment3> segments, uint8_t order);
     bool evaluate(double t, FlatOutput3& output) const override;
-    double duration() const override {
-        return total_duration_;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kPolynomial;
-    }
-    uint32_t flags() const override {
-        return flags_;
-    }
-    uint8_t order() const {
-        return order_;
-    }
-    const std::vector<PolynomialSegment3>& segments() const {
-        return segments_;
-    }
+    double duration() const override { return total_duration_; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kPolynomial; }
+    uint32_t flags() const override { return flags_; }
+    uint8_t order() const { return order_; }
+    const std::vector<PolynomialSegment3>& segments() const { return segments_; }
 
-   private:
+  private:
     std::vector<PolynomialSegment3> segments_;
     double total_duration_{0.0};
     uint8_t order_{0U};
@@ -126,7 +116,7 @@ struct WaypointProblem3 {
 };
 
 class MincoWaypointSolver3 final {
-   public:
+  public:
     bool solve(const WaypointProblem3& problem, PiecewisePolynomialEvaluator3& evaluator,
                uint32_t* flags = nullptr) const;
 };
@@ -137,56 +127,45 @@ struct SampledPoint3 {
 };
 
 class SampledEvaluator3 final : public TrajectoryEvaluator3 {
-   public:
+  public:
     bool setSamples(std::vector<SampledPoint3> samples);
     bool evaluate(double t, FlatOutput3& output) const override;
-    double duration() const override {
-        return duration_;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kSampled;
-    }
-    uint32_t flags() const override {
-        return flags_;
-    }
-    const std::vector<SampledPoint3>& samples() const {
-        return samples_;
-    }
+    double duration() const override { return duration_; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kSampled; }
+    uint32_t flags() const override { return flags_; }
+    const std::vector<SampledPoint3>& samples() const { return samples_; }
 
-   private:
+  private:
     std::vector<SampledPoint3> samples_;
     double duration_{0.0};
     uint32_t flags_{kFlagNone};
 };
 
 class TrajectoryValidator3 final {
-   public:
-    static uint32_t validate(const TrajectoryEvaluator3& evaluator, const TrajectoryLimits3& limits,
-                             double sample_dt);
+  public:
+    static uint32_t validate(const TrajectoryEvaluator3& evaluator, const TrajectoryLimits3& limits, double sample_dt);
     static bool finite(const FlatOutput3& output);
 };
 
 class FlatnessMapper3 final {
-   public:
+  public:
     explicit FlatnessMapper3(double gravity = 9.8066, double min_specific_thrust = 0.1);
     FullStateReference3 map(const FlatOutput3& flat) const;
 
-   private:
+  private:
     double gravity_;
     double min_specific_thrust_;
 };
 
 std::unique_ptr<TrajectoryEvaluator3> cloneEvaluator(const TrajectoryEvaluator3& evaluator);
 
-}  // namespace xgc2_math::trajectory
-
+} // namespace xgc2_math::trajectory
 
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <limits>
 #include <numeric>
-
 
 namespace xgc2_math::trajectory {
 namespace trajectory3_detail {
@@ -249,33 +228,28 @@ inline void fillYawFromVelocity(FlatOutput3& output) {
     const double denominator_dot = 2.0 * (vx * ax + vy * ay);
     output.yaw = std::atan2(vy, vx);
     output.yaw_rate = numerator / speed_sq;
-    output.yaw_accel =
-        (numerator_dot * speed_sq - numerator * denominator_dot) / (speed_sq * speed_sq);
+    output.yaw_accel = (numerator_dot * speed_sq - numerator * denominator_dot) / (speed_sq * speed_sq);
 }
 
 inline Eigen::Vector3d unitDerivative(const Eigen::Vector3d& value, const Eigen::Vector3d& value_dot,
-                               const Eigen::Vector3d& unit_value) {
+                                      const Eigen::Vector3d& unit_value) {
     const double norm = value.norm();
     if (!finiteScalar(norm) || norm < kMinNorm) {
         return Eigen::Vector3d::Zero();
     }
-    const Eigen::Matrix3d projector =
-        Eigen::Matrix3d::Identity() - unit_value * unit_value.transpose();
+    const Eigen::Matrix3d projector = Eigen::Matrix3d::Identity() - unit_value * unit_value.transpose();
     return projector * value_dot / norm;
 }
 
 inline Eigen::Vector3d unitSecondDerivative(const Eigen::Vector3d& value, const Eigen::Vector3d& value_dot,
-                                     const Eigen::Vector3d& value_ddot,
-                                     const Eigen::Vector3d& unit_value,
-                                     const Eigen::Vector3d& unit_dot) {
+                                            const Eigen::Vector3d& value_ddot, const Eigen::Vector3d& unit_value,
+                                            const Eigen::Vector3d& unit_dot) {
     const double norm = value.norm();
     if (!finiteScalar(norm) || norm < kMinNorm) {
         return Eigen::Vector3d::Zero();
     }
-    const Eigen::Matrix3d projector =
-        Eigen::Matrix3d::Identity() - unit_value * unit_value.transpose();
-    const Eigen::Matrix3d projector_dot =
-        -(unit_dot * unit_value.transpose() + unit_value * unit_dot.transpose());
+    const Eigen::Matrix3d projector = Eigen::Matrix3d::Identity() - unit_value * unit_value.transpose();
+    const Eigen::Matrix3d projector_dot = -(unit_dot * unit_value.transpose() + unit_value * unit_dot.transpose());
     const double norm_dot = unit_value.dot(value_dot);
     return projector_dot * value_dot / norm + projector * value_ddot / norm -
            projector * value_dot * norm_dot / (norm * norm);
@@ -293,8 +267,7 @@ inline Eigen::Vector3d vee(const Eigen::Matrix3d& skew) {
     return Eigen::Vector3d(skew(2, 1), skew(0, 2), skew(1, 0));
 }
 
-inline bool segmentAt(const std::vector<PolynomialSegment3>& segments, double t, size_t& index,
-               double& local_t) {
+inline bool segmentAt(const std::vector<PolynomialSegment3>& segments, double t, size_t& index, double& local_t) {
     if (segments.empty() || !finiteScalar(t)) {
         return false;
     }
@@ -366,8 +339,7 @@ inline bool smoothedL1(double x, double mu, double& value, double& derivative) {
 inline void forwardT(const Eigen::VectorXd& tau, Eigen::VectorXd& times) {
     times.resize(tau.size());
     for (int i = 0; i < tau.size(); ++i) {
-        times(i) = tau(i) > 0.0 ? ((0.5 * tau(i) + 1.0) * tau(i) + 1.0)
-                                : 1.0 / ((0.5 * tau(i) - 1.0) * tau(i) + 1.0);
+        times(i) = tau(i) > 0.0 ? ((0.5 * tau(i) + 1.0) * tau(i) + 1.0) : 1.0 / ((0.5 * tau(i) - 1.0) * tau(i) + 1.0);
     }
 }
 
@@ -379,8 +351,7 @@ inline void backwardT(const Eigen::VectorXd& times, Eigen::VectorXd& tau) {
     }
 }
 
-inline void backwardGradT(const Eigen::VectorXd& tau, const Eigen::VectorXd& grad_times,
-                   Eigen::VectorXd& grad_tau) {
+inline void backwardGradT(const Eigen::VectorXd& tau, const Eigen::VectorXd& grad_times, Eigen::VectorXd& grad_tau) {
     grad_tau.resize(tau.size());
     for (int i = 0; i < tau.size(); ++i) {
         if (tau(i) > 0.0) {
@@ -400,13 +371,12 @@ inline double sphereRadius(const WaypointConstraint3& constraint) {
     if (finiteScalar(constraint.size.x()) && constraint.size.x() > 0.0) {
         return constraint.size.x();
     }
-    return std::max({std::abs(constraint.size.x()), std::abs(constraint.size.y()),
-                     std::abs(constraint.size.z()), 1.0e-3});
+    return std::max(
+        {std::abs(constraint.size.x()), std::abs(constraint.size.y()), std::abs(constraint.size.z()), 1.0e-3});
 }
 
 inline Eigen::Vector3d halfExtents(const WaypointConstraint3& constraint) {
-    return Eigen::Vector3d(std::max(0.0, std::abs(constraint.size.x())),
-                           std::max(0.0, std::abs(constraint.size.y())),
+    return Eigen::Vector3d(std::max(0.0, std::abs(constraint.size.x())), std::max(0.0, std::abs(constraint.size.y())),
                            std::max(0.0, std::abs(constraint.size.z())));
 }
 
@@ -419,8 +389,7 @@ inline Eigen::Matrix3d rotationOf(const WaypointConstraint3& constraint) {
     return q.toRotationMatrix();
 }
 
-inline Eigen::Vector3d mapConstraintPoint(const WaypointConstraint3& constraint,
-                                   const Eigen::Vector3d& xi) {
+inline Eigen::Vector3d mapConstraintPoint(const WaypointConstraint3& constraint, const Eigen::Vector3d& xi) {
     if (constraint.type == WaypointConstraintType3::kPoint) {
         return constraint.position;
     }
@@ -439,7 +408,7 @@ inline Eigen::Vector3d mapConstraintPoint(const WaypointConstraint3& constraint,
 }
 
 inline Eigen::Vector3d constraintGradXi(const WaypointConstraint3& constraint, const Eigen::Vector3d& xi,
-                                 const Eigen::Vector3d& grad_point) {
+                                        const Eigen::Vector3d& grad_point) {
     if (constraint.type == WaypointConstraintType3::kPoint) {
         return Eigen::Vector3d::Zero();
     }
@@ -447,8 +416,8 @@ inline Eigen::Vector3d constraintGradXi(const WaypointConstraint3& constraint, c
         const double radius = sphereRadius(constraint);
         const double denom2 = 1.0 + xi.squaredNorm();
         const double denom = std::sqrt(denom2);
-        const Eigen::Matrix3d jac = radius * (Eigen::Matrix3d::Identity() / denom -
-                                              (xi * xi.transpose()) / (denom2 * denom));
+        const Eigen::Matrix3d jac =
+            radius * (Eigen::Matrix3d::Identity() / denom - (xi * xi.transpose()) / (denom2 * denom));
         return jac.transpose() * grad_point;
     }
     Eigen::Vector3d half = halfExtents(constraint);
@@ -456,14 +425,13 @@ inline Eigen::Vector3d constraintGradXi(const WaypointConstraint3& constraint, c
         half.x() = 0.0;
     }
     const Eigen::Vector3d tanh_xi(std::tanh(xi.x()), std::tanh(xi.y()), std::tanh(xi.z()));
-    const Eigen::Vector3d scale =
-        half.cwiseProduct(Eigen::Vector3d::Ones() - tanh_xi.cwiseProduct(tanh_xi));
+    const Eigen::Vector3d scale = half.cwiseProduct(Eigen::Vector3d::Ones() - tanh_xi.cwiseProduct(tanh_xi));
     return scale.cwiseProduct(rotationOf(constraint).transpose() * grad_point);
 }
 
 inline void dynamicPenalty(const Eigen::VectorXd& times, const Eigen::MatrixX3d& coeffs,
-                    const WaypointProblem3& problem, double& cost, Eigen::VectorXd& grad_times,
-                    Eigen::MatrixX3d& grad_coeffs) {
+                           const WaypointProblem3& problem, double& cost, Eigen::VectorXd& grad_times,
+                           Eigen::MatrixX3d& grad_coeffs) {
     const int piece_count = static_cast<int>(times.size());
     const int integral_resolution = std::max(2, problem.integral_resolution);
     const double integral_frac = 1.0 / static_cast<double>(integral_resolution);
@@ -515,8 +483,7 @@ inline void dynamicPenalty(const Eigen::VectorXd& times, const Eigen::MatrixX3d&
             double penalty = 0.0;
             double value = 0.0;
             double derivative = 0.0;
-            const auto add_norm_penalty = [&](const Eigen::Vector3d& vec, double limit,
-                                              Eigen::Vector3d& grad) {
+            const auto add_norm_penalty = [&](const Eigen::Vector3d& vec, double limit, Eigen::Vector3d& grad) {
                 if (limit <= 0.0) {
                     return;
                 }
@@ -539,14 +506,14 @@ inline void dynamicPenalty(const Eigen::VectorXd& times, const Eigen::MatrixX3d&
             Eigen::Vector4d grad_quat = Eigen::Vector4d::Zero();
             Eigen::Vector3d grad_omega = Eigen::Vector3d::Zero();
             if (limits.max_body_rate > 0.0 &&
-                smoothedL1(omega.squaredNorm() - limits.max_body_rate * limits.max_body_rate,
-                           smooth, value, derivative)) {
+                smoothedL1(omega.squaredNorm() - limits.max_body_rate * limits.max_body_rate, smooth, value,
+                           derivative)) {
                 penalty += weight * value;
                 grad_omega += weight * derivative * 2.0 * omega;
             }
             if (limits.max_tilt > 0.0) {
-                const double cos_tilt = clamp(1.0 - 2.0 * (quat(1) * quat(1) + quat(2) * quat(2)),
-                                              -1.0 + 1.0e-6, 1.0 - 1.0e-6);
+                const double cos_tilt =
+                    clamp(1.0 - 2.0 * (quat(1) * quat(1) + quat(2) * quat(2)), -1.0 + 1.0e-6, 1.0 - 1.0e-6);
                 if (smoothedL1(std::acos(cos_tilt) - limits.max_tilt, smooth, value, derivative)) {
                     penalty += weight * value;
                     grad_quat += weight * derivative / std::sqrt(1.0 - cos_tilt * cos_tilt) * 4.0 *
@@ -556,9 +523,8 @@ inline void dynamicPenalty(const Eigen::VectorXd& times, const Eigen::MatrixX3d&
             if (check_thrust) {
                 const double thrust_mean = 0.5 * (thrust_min + thrust_max);
                 const double thrust_radius = 0.5 * (thrust_max - thrust_min);
-                if (smoothedL1((thrust - thrust_mean) * (thrust - thrust_mean) -
-                                   thrust_radius * thrust_radius,
-                               smooth, value, derivative)) {
+                if (smoothedL1((thrust - thrust_mean) * (thrust - thrust_mean) - thrust_radius * thrust_radius, smooth,
+                               value, derivative)) {
                     penalty += weight * value;
                     grad_thrust += weight * derivative * 2.0 * (thrust - thrust_mean);
                 }
@@ -570,21 +536,18 @@ inline void dynamicPenalty(const Eigen::VectorXd& times, const Eigen::MatrixX3d&
             Eigen::Vector3d flat_grad_jerk;
             double yaw_grad = 0.0;
             double yaw_rate_grad = 0.0;
-            flatmap.backward(Eigen::Vector3d::Zero(), grad_vel, grad_thrust, grad_quat, grad_omega,
-                             flat_grad_pos, flat_grad_vel, flat_grad_acc, flat_grad_jerk, yaw_grad,
-                             yaw_rate_grad);
+            flatmap.backward(Eigen::Vector3d::Zero(), grad_vel, grad_thrust, grad_quat, grad_omega, flat_grad_pos,
+                             flat_grad_vel, flat_grad_acc, flat_grad_jerk, yaw_grad, yaw_rate_grad);
             grad_vel += flat_grad_vel;
             grad_acc += flat_grad_acc;
             grad_jerk += flat_grad_jerk;
 
             const double node = (j == 0 || j == integral_resolution) ? 0.5 : 1.0;
             const double alpha = static_cast<double>(j) * integral_frac;
-            grad_coeffs.block<6, 3>(i * 6, 0) +=
-                (beta1 * grad_vel.transpose() + beta2 * grad_acc.transpose() +
-                 beta3 * grad_jerk.transpose() + beta4 * grad_snap.transpose()) *
-                node * step;
-            grad_times(i) += (grad_vel.dot(acc) + grad_acc.dot(jerk) + grad_jerk.dot(snap) +
-                              grad_snap.dot(crackle)) *
+            grad_coeffs.block<6, 3>(i * 6, 0) += (beta1 * grad_vel.transpose() + beta2 * grad_acc.transpose() +
+                                                  beta3 * grad_jerk.transpose() + beta4 * grad_snap.transpose()) *
+                                                 node * step;
+            grad_times(i) += (grad_vel.dot(acc) + grad_acc.dot(jerk) + grad_jerk.dot(snap) + grad_snap.dot(crackle)) *
                                  alpha * node * step +
                              node * integral_frac * penalty;
             cost += node * step * penalty;
@@ -593,7 +556,7 @@ inline void dynamicPenalty(const Eigen::VectorXd& times, const Eigen::MatrixX3d&
 }
 
 class MincoWaypointOptimizer {
-   public:
+  public:
     explicit MincoWaypointOptimizer(const WaypointProblem3& problem) : problem_(problem) {
         piece_count_ = static_cast<int>(problem_.constraints.size()) - 1;
         spatial_offsets_.assign(problem_.constraints.size(), -1);
@@ -642,8 +605,8 @@ class MincoWaypointOptimizer {
         params.min_step = 1.0e-32;
 
         double min_cost = 0.0;
-        const int ret = xgc2_math::optimization::lbfgs::lbfgs_optimize(x, min_cost, &MincoWaypointOptimizer::costFunction,
-                                              nullptr, nullptr, this, params);
+        const int ret = xgc2_math::optimization::lbfgs::lbfgs_optimize(
+            x, min_cost, &MincoWaypointOptimizer::costFunction, nullptr, nullptr, this, params);
         if (ret < 0 || !finiteScalar(min_cost)) {
             flags |= kFlagOptimizationFailure;
             return false;
@@ -656,7 +619,7 @@ class MincoWaypointOptimizer {
         return buildEvaluator(times, minco_.getCoeffs(), evaluator, flags);
     }
 
-   private:
+  private:
     static double costFunction(void* ptr, const Eigen::VectorXd& x, Eigen::VectorXd& grad) {
         return static_cast<MincoWaypointOptimizer*>(ptr)->cost(x, grad);
     }
@@ -673,8 +636,7 @@ class MincoWaypointOptimizer {
         Eigen::VectorXd partial_grad_times;
         minco_.getEnergyPartialGradByCoeffs(partial_grad_coeffs);
         minco_.getEnergyPartialGradByTimes(partial_grad_times);
-        dynamicPenalty(times, minco_.getCoeffs(), problem_, cost, partial_grad_times,
-                       partial_grad_coeffs);
+        dynamicPenalty(times, minco_.getCoeffs(), problem_, cost, partial_grad_times, partial_grad_coeffs);
 
         Eigen::Matrix3Xd grad_points;
         Eigen::VectorXd grad_times;
@@ -693,8 +655,8 @@ class MincoWaypointOptimizer {
                     continue;
                 }
                 const Eigen::Vector3d xi = x.segment(piece_count_ + offset, 3);
-                const Eigen::Vector3d grad_xi = constraintGradXi(
-                    problem_.constraints[i], xi, grad_points.col(static_cast<int>(i) - 1));
+                const Eigen::Vector3d grad_xi =
+                    constraintGradXi(problem_.constraints[i], xi, grad_points.col(static_cast<int>(i) - 1));
                 grad.segment(piece_count_ + offset, 3) = grad_xi;
             }
         }
@@ -713,10 +675,9 @@ class MincoWaypointOptimizer {
                 duration = problem_.segment_times[static_cast<size_t>(i)];
             }
             if (!finiteScalar(duration) || duration <= 0.0) {
-                const double distance =
-                    (problem_.constraints[static_cast<size_t>(i) + 1U].position -
-                     problem_.constraints[static_cast<size_t>(i)].position)
-                        .norm();
+                const double distance = (problem_.constraints[static_cast<size_t>(i) + 1U].position -
+                                         problem_.constraints[static_cast<size_t>(i)].position)
+                                            .norm();
                 duration = distance / std::max(0.1, problem_.desired_speed);
             }
             times(i) = clamp(duration, problem_.min_segment_time, problem_.max_segment_time);
@@ -762,8 +723,7 @@ class MincoWaypointOptimizer {
             flags |= kFlagInvalidInput;
             return false;
         }
-        flags |= TrajectoryValidator3::validate(evaluator, problem_.limits,
-                                               problem_.validation_sample_dt);
+        flags |= TrajectoryValidator3::validate(evaluator, problem_.limits, problem_.validation_sample_dt);
         return (flags & (kFlagInvalidInput | kFlagNonFinite | kFlagOptimizationFailure)) == 0U;
     }
 
@@ -776,10 +736,9 @@ class MincoWaypointOptimizer {
     xgc2_math::optimization::minco::MINCO_S3NU minco_;
 };
 
-}  // namespace trajectory3_detail
+} // namespace trajectory3_detail
 
-inline bool PiecewisePolynomialEvaluator3::setSegments(std::vector<PolynomialSegment3> segments,
-                                               uint8_t order) {
+inline bool PiecewisePolynomialEvaluator3::setSegments(std::vector<PolynomialSegment3> segments, uint8_t order) {
     segments_ = std::move(segments);
     order_ = order;
     total_duration_ = 0.0;
@@ -790,8 +749,8 @@ inline bool PiecewisePolynomialEvaluator3::setSegments(std::vector<PolynomialSeg
     }
     for (const auto& segment : segments_) {
         if (!trajectory3_detail::finiteScalar(segment.duration) || segment.duration <= 0.0 ||
-            segment.x.size() != static_cast<size_t>(order_) + 1U ||
-            segment.y.size() != segment.x.size() || segment.z.size() != segment.x.size()) {
+            segment.x.size() != static_cast<size_t>(order_) + 1U || segment.y.size() != segment.x.size() ||
+            segment.z.size() != segment.x.size()) {
             flags_ |= kFlagInvalidInput;
             return false;
         }
@@ -814,21 +773,21 @@ inline bool PiecewisePolynomialEvaluator3::evaluate(double t, FlatOutput3& outpu
                               trajectory3_detail::polyValue(segment.y, local_t, derivative),
                               trajectory3_detail::polyValue(segment.z, local_t, derivative));
         switch (derivative) {
-            case 0:
-                output.position = value;
-                break;
-            case 1:
-                output.velocity = value;
-                break;
-            case 2:
-                output.acceleration = value;
-                break;
-            case 3:
-                output.jerk = value;
-                break;
-            case 4:
-                output.snap = value;
-                break;
+        case 0:
+            output.position = value;
+            break;
+        case 1:
+            output.velocity = value;
+            break;
+        case 2:
+            output.acceleration = value;
+            break;
+        case 3:
+            output.jerk = value;
+            break;
+        case 4:
+            output.snap = value;
+            break;
         }
     }
     if (!segment.yaw.empty()) {
@@ -846,8 +805,8 @@ inline bool PiecewisePolynomialEvaluator3::evaluate(double t, FlatOutput3& outpu
     return true;
 }
 
-inline bool MincoWaypointSolver3::solve(const WaypointProblem3& problem,
-                                PiecewisePolynomialEvaluator3& evaluator, uint32_t* flags) const {
+inline bool MincoWaypointSolver3::solve(const WaypointProblem3& problem, PiecewisePolynomialEvaluator3& evaluator,
+                                        uint32_t* flags) const {
     uint32_t local_flags = kFlagNone;
     if (problem.constraints.size() < 2U) {
         local_flags |= kFlagInvalidInput;
@@ -858,14 +817,14 @@ inline bool MincoWaypointSolver3::solve(const WaypointProblem3& problem,
     }
 
     for (const auto& constraint : problem.constraints) {
-        if (!trajectory3_detail::finiteVector(constraint.position) || !trajectory3_detail::finiteVector(constraint.size) ||
+        if (!trajectory3_detail::finiteVector(constraint.position) ||
+            !trajectory3_detail::finiteVector(constraint.size) ||
             !trajectory3_detail::finiteScalar(constraint.orientation.norm()) ||
             constraint.orientation.norm() < trajectory3_detail::kMinNorm) {
             local_flags |= kFlagInvalidInput;
         }
     }
-    if (!problem.segment_times.empty() &&
-        problem.segment_times.size() + 1U != problem.constraints.size()) {
+    if (!problem.segment_times.empty() && problem.segment_times.size() + 1U != problem.constraints.size()) {
         local_flags |= kFlagInvalidInput;
     }
     for (const double duration : problem.segment_times) {
@@ -873,10 +832,14 @@ inline bool MincoWaypointSolver3::solve(const WaypointProblem3& problem,
             local_flags |= kFlagInvalidInput;
         }
     }
-    if (!trajectory3_detail::finiteVector(problem.start_velocity) || !trajectory3_detail::finiteVector(problem.start_acceleration) ||
-        !trajectory3_detail::finiteVector(problem.end_velocity) || !trajectory3_detail::finiteVector(problem.end_acceleration) ||
-        !trajectory3_detail::finiteScalar(problem.desired_speed) || !trajectory3_detail::finiteScalar(problem.time_weight) ||
-        !trajectory3_detail::finiteScalar(problem.dynamic_penalty_weight) || !trajectory3_detail::finiteScalar(problem.rel_cost_tol)) {
+    if (!trajectory3_detail::finiteVector(problem.start_velocity) ||
+        !trajectory3_detail::finiteVector(problem.start_acceleration) ||
+        !trajectory3_detail::finiteVector(problem.end_velocity) ||
+        !trajectory3_detail::finiteVector(problem.end_acceleration) ||
+        !trajectory3_detail::finiteScalar(problem.desired_speed) ||
+        !trajectory3_detail::finiteScalar(problem.time_weight) ||
+        !trajectory3_detail::finiteScalar(problem.dynamic_penalty_weight) ||
+        !trajectory3_detail::finiteScalar(problem.rel_cost_tol)) {
         local_flags |= kFlagInvalidInput;
     }
     if ((local_flags & kFlagInvalidInput) != 0U) {
@@ -891,8 +854,7 @@ inline bool MincoWaypointSolver3::solve(const WaypointProblem3& problem,
     if (flags) {
         *flags = local_flags;
     }
-    return solved &&
-           (local_flags & (kFlagInvalidInput | kFlagNonFinite | kFlagOptimizationFailure)) == 0U;
+    return solved && (local_flags & (kFlagInvalidInput | kFlagNonFinite | kFlagOptimizationFailure)) == 0U;
 }
 
 inline bool SampledEvaluator3::setSamples(std::vector<SampledPoint3> samples) {
@@ -931,9 +893,9 @@ inline bool SampledEvaluator3::evaluate(double t, FlatOutput3& output) const {
         return true;
     }
 
-    const auto upper =
-        std::upper_bound(samples_.begin(), samples_.end(), t,
-                         [](double lhs, const SampledPoint3& rhs) { return lhs < rhs.t; });
+    const auto upper = std::upper_bound(samples_.begin(), samples_.end(), t, [](double lhs, const SampledPoint3& rhs) {
+        return lhs < rhs.t;
+    });
     const auto prev = upper - 1;
     const auto next = upper;
     const double dt = std::max(trajectory3_detail::kMinDuration, next->t - prev->t);
@@ -954,8 +916,8 @@ inline bool SampledEvaluator3::evaluate(double t, FlatOutput3& output) const {
     return true;
 }
 
-inline uint32_t TrajectoryValidator3::validate(const TrajectoryEvaluator3& evaluator,
-                                       const TrajectoryLimits3& limits, double sample_dt) {
+inline uint32_t TrajectoryValidator3::validate(const TrajectoryEvaluator3& evaluator, const TrajectoryLimits3& limits,
+                                               double sample_dt) {
     uint32_t flags = evaluator.flags();
     if (!trajectory3_detail::finiteScalar(evaluator.duration()) || evaluator.duration() < 0.0) {
         return flags | kFlagInvalidInput;
@@ -978,8 +940,8 @@ inline uint32_t TrajectoryValidator3::validate(const TrajectoryEvaluator3& evalu
 inline bool TrajectoryValidator3::finite(const FlatOutput3& output) {
     return trajectory3_detail::finiteVector(output.position) && trajectory3_detail::finiteVector(output.velocity) &&
            trajectory3_detail::finiteVector(output.acceleration) && trajectory3_detail::finiteVector(output.jerk) &&
-           trajectory3_detail::finiteVector(output.snap) && trajectory3_detail::finiteScalar(output.yaw) && trajectory3_detail::finiteScalar(output.yaw_rate) &&
-           trajectory3_detail::finiteScalar(output.yaw_accel);
+           trajectory3_detail::finiteVector(output.snap) && trajectory3_detail::finiteScalar(output.yaw) &&
+           trajectory3_detail::finiteScalar(output.yaw_rate) && trajectory3_detail::finiteScalar(output.yaw_accel);
 }
 
 inline FlatnessMapper3::FlatnessMapper3(double gravity, double min_specific_thrust)
@@ -1020,9 +982,8 @@ inline FullStateReference3 FlatnessMapper3::map(const FlatOutput3& flat) const {
     Eigen::Vector3d y_raw_ddot = b3_ddot.cross(xc) + 2.0 * b3_dot.cross(xc_dot) + b3.cross(xc_ddot);
     if (!trajectory3_detail::finiteScalar(y_raw.norm()) || y_raw.norm() < 1.0e-7) {
         output.flags |= kFlagYawSingularity;
-        const Eigen::Vector3d fallback = std::abs(b3.dot(Eigen::Vector3d::UnitY())) > 0.95
-                                             ? Eigen::Vector3d::UnitX()
-                                             : Eigen::Vector3d::UnitY();
+        const Eigen::Vector3d fallback =
+            std::abs(b3.dot(Eigen::Vector3d::UnitY())) > 0.95 ? Eigen::Vector3d::UnitX() : Eigen::Vector3d::UnitY();
         y_raw = b3.cross(fallback);
         y_raw_dot.setZero();
         y_raw_ddot.setZero();
@@ -1033,8 +994,7 @@ inline FullStateReference3 FlatnessMapper3::map(const FlatOutput3& flat) const {
     const Eigen::Vector3d yb_ddot = trajectory3_detail::unitSecondDerivative(y_raw, y_raw_dot, y_raw_ddot, yb, yb_dot);
     const Eigen::Vector3d xb = trajectory3_detail::normalizeOr(yb.cross(b3), Eigen::Vector3d::UnitX());
     const Eigen::Vector3d xb_dot = yb_dot.cross(b3) + yb.cross(b3_dot);
-    const Eigen::Vector3d xb_ddot =
-        yb_ddot.cross(b3) + 2.0 * yb_dot.cross(b3_dot) + yb.cross(b3_ddot);
+    const Eigen::Vector3d xb_ddot = yb_ddot.cross(b3) + 2.0 * yb_dot.cross(b3_dot) + yb.cross(b3_ddot);
 
     Eigen::Matrix3d rotation;
     rotation.col(0) = xb;
@@ -1050,8 +1010,7 @@ inline FullStateReference3 FlatnessMapper3::map(const FlatOutput3& flat) const {
     rotation_ddot.col(2) = b3_ddot;
 
     const Eigen::Matrix3d omega_hat = rotation.transpose() * rotation_dot;
-    const Eigen::Matrix3d alpha_hat =
-        rotation_dot.transpose() * rotation_dot + rotation.transpose() * rotation_ddot;
+    const Eigen::Matrix3d alpha_hat = rotation_dot.transpose() * rotation_dot + rotation.transpose() * rotation_ddot;
     output.attitude = Eigen::Quaterniond(rotation);
     output.attitude.normalize();
     if (output.attitude.w() < 0.0) {
@@ -1059,7 +1018,8 @@ inline FullStateReference3 FlatnessMapper3::map(const FlatOutput3& flat) const {
     }
     output.body_rate = trajectory3_detail::vee(0.5 * (omega_hat - omega_hat.transpose()));
     output.angular_acceleration = trajectory3_detail::vee(0.5 * (alpha_hat - alpha_hat.transpose()));
-    if (!trajectory3_detail::finiteVector(output.body_rate) || !trajectory3_detail::finiteVector(output.angular_acceleration) ||
+    if (!trajectory3_detail::finiteVector(output.body_rate) ||
+        !trajectory3_detail::finiteVector(output.angular_acceleration) ||
         !trajectory3_detail::finiteScalar(output.attitude.norm())) {
         output.flags |= kFlagNonFinite;
     }
@@ -1068,30 +1028,30 @@ inline FullStateReference3 FlatnessMapper3::map(const FlatOutput3& flat) const {
 
 inline std::unique_ptr<TrajectoryEvaluator3> cloneEvaluator(const TrajectoryEvaluator3& evaluator) {
     switch (evaluator.type()) {
-        case TrajectoryModelType::kAnalytic:
-            break;
-        case TrajectoryModelType::kPolynomial: {
-            const auto* polynomial = dynamic_cast<const PiecewisePolynomialEvaluator3*>(&evaluator);
-            if (!polynomial) {
-                return nullptr;
-            }
-            auto clone = std::make_unique<PiecewisePolynomialEvaluator3>();
-            (void)clone->setSegments(polynomial->segments(), polynomial->order());
-            return clone;
+    case TrajectoryModelType::kAnalytic:
+        break;
+    case TrajectoryModelType::kPolynomial: {
+        const auto* polynomial = dynamic_cast<const PiecewisePolynomialEvaluator3*>(&evaluator);
+        if (!polynomial) {
+            return nullptr;
         }
-        case TrajectoryModelType::kSampled: {
-            const auto* sampled = dynamic_cast<const SampledEvaluator3*>(&evaluator);
-            if (!sampled) {
-                return nullptr;
-            }
-            auto clone = std::make_unique<SampledEvaluator3>();
-            (void)clone->setSamples(sampled->samples());
-            return clone;
+        auto clone = std::make_unique<PiecewisePolynomialEvaluator3>();
+        (void)clone->setSegments(polynomial->segments(), polynomial->order());
+        return clone;
+    }
+    case TrajectoryModelType::kSampled: {
+        const auto* sampled = dynamic_cast<const SampledEvaluator3*>(&evaluator);
+        if (!sampled) {
+            return nullptr;
         }
-        case TrajectoryModelType::kNone:
-            break;
+        auto clone = std::make_unique<SampledEvaluator3>();
+        (void)clone->setSamples(sampled->samples());
+        return clone;
+    }
+    case TrajectoryModelType::kNone:
+        break;
     }
     return nullptr;
 }
 
-}  // namespace xgc2_math::trajectory
+} // namespace xgc2_math::trajectory

@@ -33,8 +33,7 @@ struct Se2NmpcProblemHorizon {
     double stage_dt_s{0.0};
 
     bool validForSteps(int horizon_steps) const {
-        return horizon_steps > 0 && stage_dt_s > 0.0 &&
-               references.size() >= static_cast<size_t>(horizon_steps + 1);
+        return horizon_steps > 0 && stage_dt_s > 0.0 && references.size() >= static_cast<size_t>(horizon_steps + 1);
     }
 };
 
@@ -57,7 +56,7 @@ struct Se2NmpcProblemResult {
 };
 
 class Se2NmpcProblemBackend {
-   public:
+  public:
     virtual ~Se2NmpcProblemBackend() = default;
     virtual bool initialize() = 0;
     virtual void resetWarmStart() = 0;
@@ -100,4 +99,4 @@ inline Se2Control unpackControl(const Se2ControlVector& value) {
     return control;
 }
 
-}  // namespace xgc2_math::control
+} // namespace xgc2_math::control

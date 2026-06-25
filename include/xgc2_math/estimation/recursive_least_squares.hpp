@@ -5,8 +5,8 @@
 #include <array>
 #include <cmath>
 
-#include "xgc2_math/utils/status.hpp"
 #include "xgc2_math/observer/differentiator.hpp"
+#include "xgc2_math/utils/status.hpp"
 
 namespace xgc2_math {
 
@@ -148,9 +148,7 @@ class ScalarRecursiveLeastSquares {
         return std::clamp(covariance, options_.min_covariance, options_.max_covariance);
     }
 
-    ScalarRecursiveLeastSquaresSample sample(double residual,
-                                             double gain,
-                                             ScalarRecursiveLeastSquaresStatus status,
+    ScalarRecursiveLeastSquaresSample sample(double residual, double gain, ScalarRecursiveLeastSquaresStatus status,
                                              bool accepted) const {
         ScalarRecursiveLeastSquaresSample output;
         output.parameter = parameter_;

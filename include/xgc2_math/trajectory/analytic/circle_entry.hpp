@@ -18,8 +18,8 @@ struct CircleEntryCurveParameters2 {
 };
 
 class CircleEntryCurveEvaluator2 final : public TrajectoryEvaluator2 {
-   public:
-    explicit CircleEntryCurveEvaluator2(CircleEntryCurveParameters2 params = {})
+  public:
+    explicit CircleEntryCurveEvaluator2(const CircleEntryCurveParameters2& params = {})
         : params_(params), circle_(params_.circle) {
         params_.entry_duration = std::max(0.0, params_.entry_duration);
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
@@ -43,12 +43,10 @@ class CircleEntryCurveEvaluator2 final : public TrajectoryEvaluator2 {
 
         PlanarReference2 end;
         circle_.evaluateCircle(0.0, end);
-        const auto cx = analytic_detail::septicBoundary(params_.origin.x(), 0.0, 0.0, 0.0,
-                                                        end.position.x(), end.velocity.x(),
-                                                        end.acceleration.x(), end.jerk.x(), entry);
-        const auto cy = analytic_detail::septicBoundary(params_.origin.y(), 0.0, 0.0, 0.0,
-                                                        end.position.y(), end.velocity.y(),
-                                                        end.acceleration.y(), end.jerk.y(), entry);
+        const auto cx = analytic_detail::septicBoundary(params_.origin.x(), 0.0, 0.0, 0.0, end.position.x(),
+                                                        end.velocity.x(), end.acceleration.x(), end.jerk.x(), entry);
+        const auto cy = analytic_detail::septicBoundary(params_.origin.y(), 0.0, 0.0, 0.0, end.position.y(),
+                                                        end.velocity.y(), end.acceleration.y(), end.jerk.y(), entry);
         output.position << analytic_detail::polyValue(cx, t, 0), analytic_detail::polyValue(cy, t, 0);
         output.velocity << analytic_detail::polyValue(cx, t, 1), analytic_detail::polyValue(cy, t, 1);
         output.acceleration << analytic_detail::polyValue(cx, t, 2), analytic_detail::polyValue(cy, t, 2);
@@ -59,20 +57,12 @@ class CircleEntryCurveEvaluator2 final : public TrajectoryEvaluator2 {
         return TrajectoryValidator2::finite(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags | circle_.flags();
-    }
-    const CircleEntryCurveParameters2& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags | circle_.flags(); }
+    const CircleEntryCurveParameters2& params() const { return params_; }
 
-   private:
+  private:
     CircleEntryCurveParameters2 params_;
     CircleCurveEvaluator2 circle_;
 };
@@ -87,8 +77,8 @@ struct CircleEntryCurveParameters3 {
 };
 
 class CircleEntryCurveEvaluator3 final : public TrajectoryEvaluator3 {
-   public:
-    explicit CircleEntryCurveEvaluator3(CircleEntryCurveParameters3 params = {})
+  public:
+    explicit CircleEntryCurveEvaluator3(const CircleEntryCurveParameters3& params = {})
         : params_(params), circle_(params_.circle) {
         params_.entry_duration = std::max(0.0, params_.entry_duration);
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
@@ -113,15 +103,12 @@ class CircleEntryCurveEvaluator3 final : public TrajectoryEvaluator3 {
         FlatOutput3 end;
         circle_.evaluateCircle(0.0, end);
         const Eigen::Vector3d start(params_.origin.x(), params_.origin.y(), params_.circle.height);
-        const auto cx = analytic_detail::septicBoundary(start.x(), 0.0, 0.0, 0.0, end.position.x(),
-                                                        end.velocity.x(), end.acceleration.x(), end.jerk.x(),
-                                                        entry);
-        const auto cy = analytic_detail::septicBoundary(start.y(), 0.0, 0.0, 0.0, end.position.y(),
-                                                        end.velocity.y(), end.acceleration.y(), end.jerk.y(),
-                                                        entry);
-        const auto cz = analytic_detail::septicBoundary(start.z(), 0.0, 0.0, 0.0, end.position.z(),
-                                                        end.velocity.z(), end.acceleration.z(), end.jerk.z(),
-                                                        entry);
+        const auto cx = analytic_detail::septicBoundary(start.x(), 0.0, 0.0, 0.0, end.position.x(), end.velocity.x(),
+                                                        end.acceleration.x(), end.jerk.x(), entry);
+        const auto cy = analytic_detail::septicBoundary(start.y(), 0.0, 0.0, 0.0, end.position.y(), end.velocity.y(),
+                                                        end.acceleration.y(), end.jerk.y(), entry);
+        const auto cz = analytic_detail::septicBoundary(start.z(), 0.0, 0.0, 0.0, end.position.z(), end.velocity.z(),
+                                                        end.acceleration.z(), end.jerk.z(), entry);
         analytic_detail::evalSeptic(cx, t, output.position.x(), output.velocity.x(), output.acceleration.x(),
                                     output.jerk.x(), output.snap.x());
         analytic_detail::evalSeptic(cy, t, output.position.y(), output.velocity.y(), output.acceleration.y(),
@@ -136,22 +123,14 @@ class CircleEntryCurveEvaluator3 final : public TrajectoryEvaluator3 {
         return TrajectoryValidator3::finite(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags | circle_.flags();
-    }
-    const CircleEntryCurveParameters3& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags | circle_.flags(); }
+    const CircleEntryCurveParameters3& params() const { return params_; }
 
-   private:
+  private:
     CircleEntryCurveParameters3 params_;
     CircleCurveEvaluator3 circle_;
 };
 
-}  // namespace xgc2_math::trajectory
+} // namespace xgc2_math::trajectory

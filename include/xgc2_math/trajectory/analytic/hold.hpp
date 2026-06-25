@@ -15,8 +15,8 @@ struct HoldCurveParameters2 {
 };
 
 class HoldCurveEvaluator2 final : public TrajectoryEvaluator2 {
-   public:
-    explicit HoldCurveEvaluator2(HoldCurveParameters2 params = {}) : params_(params) {
+  public:
+    explicit HoldCurveEvaluator2(const HoldCurveParameters2& params = {}) : params_(params) {
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
             params_.duration = 60.0;
         }
@@ -35,20 +35,12 @@ class HoldCurveEvaluator2 final : public TrajectoryEvaluator2 {
         return TrajectoryValidator2::finite(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags;
-    }
-    const HoldCurveParameters2& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags; }
+    const HoldCurveParameters2& params() const { return params_; }
 
-   private:
+  private:
     HoldCurveParameters2 params_;
 };
 
@@ -60,8 +52,8 @@ struct HoldCurveParameters3 {
 };
 
 class HoldCurveEvaluator3 final : public TrajectoryEvaluator3 {
-   public:
-    explicit HoldCurveEvaluator3(HoldCurveParameters3 params = {}) : params_(params) {
+  public:
+    explicit HoldCurveEvaluator3(const HoldCurveParameters3& params = {}) : params_(params) {
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
             params_.duration = 60.0;
         }
@@ -79,21 +71,13 @@ class HoldCurveEvaluator3 final : public TrajectoryEvaluator3 {
         return TrajectoryValidator3::finite(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags;
-    }
-    const HoldCurveParameters3& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags; }
+    const HoldCurveParameters3& params() const { return params_; }
 
-   private:
+  private:
     HoldCurveParameters3 params_;
 };
 
-}  // namespace xgc2_math::trajectory
+} // namespace xgc2_math::trajectory

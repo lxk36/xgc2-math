@@ -36,7 +36,9 @@ namespace xgc2_math::trajectory::flatness {
 // 微分平坦性是指系统的状态和输入可以用平坦输出及其导数来表示
 // 对于四旋翼，位置及其导数（速度、加速度、jerk）是平坦输出
 class FlatnessMap {
-   public:
+  public:
+    FlatnessMap() = default;
+
     // 重置微分平坦映射的参数
     // 参数说明：
     //   vehicle_mass: 飞行器质量 (kg)
@@ -48,12 +50,12 @@ class FlatnessMap {
     inline void reset(const double& vehicle_mass, const double& gravitational_acceleration,
                       const double& horitonral_drag_coeff, const double& vertical_drag_coeff,
                       const double& parasitic_drag_coeff, const double& speed_smooth_factor) {
-        mass = vehicle_mass;                // 飞行器质量
-        grav = gravitational_acceleration;  // 重力加速度
-        dh = horitonral_drag_coeff;         // 水平阻力系数
-        dv = vertical_drag_coeff;           // 垂直阻力系数
-        cp = parasitic_drag_coeff;          // 寄生阻力系数
-        veps = speed_smooth_factor;         // 速度平滑因子
+        mass = vehicle_mass;               // 飞行器质量
+        grav = gravitational_acceleration; // 重力加速度
+        dh = horitonral_drag_coeff;        // 水平阻力系数
+        dv = vertical_drag_coeff;          // 垂直阻力系数
+        cp = parasitic_drag_coeff;         // 寄生阻力系数
+        veps = speed_smooth_factor;        // 速度平滑因子
 
         return;
     }
@@ -69,9 +71,9 @@ class FlatnessMap {
     //   thr: 推力 (N)
     //   quat: 四元数姿态 [w, x, y, z]
     //   omg: 角速度向量 (rad/s)
-    inline void forward(const Eigen::Vector3d& vel, const Eigen::Vector3d& acc,
-                        const Eigen::Vector3d& jer, const double& psi, const double& dpsi,
-                        double& thr, Eigen::Vector4d& quat, Eigen::Vector3d& omg) {
+    inline void forward(const Eigen::Vector3d& vel, const Eigen::Vector3d& acc, const Eigen::Vector3d& jer,
+                        const double& psi, const double& dpsi, double& thr, Eigen::Vector4d& quat,
+                        Eigen::Vector3d& omg) {
         // 声明中间变量
         double w0, w1, w2, dw0, dw1, dw2;
 
@@ -188,11 +190,10 @@ class FlatnessMap {
     //   jer_total_grad: jerk的总梯度
     //   psi_total_grad: 偏航角的总梯度
     //   dpsi_total_grad: 偏航角速度的总梯度
-    inline void backward(const Eigen::Vector3d& pos_grad, const Eigen::Vector3d& vel_grad,
-                         const double& thr_grad, const Eigen::Vector4d& quat_grad,
-                         const Eigen::Vector3d& omg_grad, Eigen::Vector3d& pos_total_grad,
-                         Eigen::Vector3d& vel_total_grad, Eigen::Vector3d& acc_total_grad,
-                         Eigen::Vector3d& jer_total_grad, double& psi_total_grad,
+    inline void backward(const Eigen::Vector3d& pos_grad, const Eigen::Vector3d& vel_grad, const double& thr_grad,
+                         const Eigen::Vector4d& quat_grad, const Eigen::Vector3d& omg_grad,
+                         Eigen::Vector3d& pos_total_grad, Eigen::Vector3d& vel_total_grad,
+                         Eigen::Vector3d& acc_total_grad, Eigen::Vector3d& jer_total_grad, double& psi_total_grad,
                          double& dpsi_total_grad) const {
         // 声明所有中间变量的梯度（后缀'b'表示backward/梯度）
         double w0b, w1b, w2b, dw0b, dw1b, dw2b;
@@ -215,16 +216,14 @@ class FlatnessMap {
         tilt_den_sqr = tilt_den * tilt_den;
         tilt_denb = (z1 * tilt1b - z0 * tilt2b) / tilt_den_sqr + 0.5 * tilt0b;
         // 反向传播角速度梯度
-        omg_termb = -((z0 * c_psi + z1 * s_psi) * (omg_grad(1))) -
-                    (z0 * s_psi - z1 * c_psi) * (omg_grad(0));
+        omg_termb = -((z0 * c_psi + z1 * s_psi) * (omg_grad(1))) - (z0 * s_psi - z1 * c_psi) * (omg_grad(0));
         tempb = omg_grad(2) / omg_den;
-        dpsi_total_grad = omg_grad(2);  // 偏航角速度的梯度
+        dpsi_total_grad = omg_grad(2); // 偏航角速度的梯度
         z1b = dz0 * tempb;
         dz0b = z1 * tempb + c_psi * (omg_grad(1)) + s_psi * (omg_grad(0));
         z0b = -(dz1 * tempb);
         dz1b = s_psi * (omg_grad(1)) - z0 * tempb - c_psi * (omg_grad(0));
-        omg_denb =
-            -((z1 * dz0 - z0 * dz1) * tempb / omg_den) - dz2 * omg_termb / (omg_den * omg_den);
+        omg_denb = -((z1 * dz0 - z0 * dz1) * tempb / omg_den) - dz2 * omg_termb / (omg_den * omg_den);
         // 继续反向传播，累积梯度到偏航角相关变量
         tempb = -(omg_term * (omg_grad(1)));
         cpsib = dz0 * (omg_grad(1)) + z0 * tempb;
@@ -239,8 +238,7 @@ class FlatnessMap {
         dz2b = omg_termb / omg_den;
         z2b = omg_denb + tilt_denb / tilt_den + f_term2 * (thr_grad);
         // 计算偏航角的总梯度
-        psi_total_grad =
-            c_psi * spsib + 0.5 * c_half_psi * head3b - s_psi * cpsib - 0.5 * s_half_psi * head0b;
+        psi_total_grad = c_psi * spsib + 0.5 * c_half_psi * head3b - s_psi * cpsib - 0.5 * s_half_psi * head0b;
         // 反向传播推力梯度到力项
         f_term0b = z0 * (thr_grad);
         f_term1b = z1 * (thr_grad);
@@ -285,8 +283,8 @@ class FlatnessMap {
         zu02b = -(ng02b / ng_den);
         zu01b = -(ng01b / ng_den);
         tempb = ng00b / ng_den;
-        ng_denb += zu02 * ng02b / (ng_den * ng_den) + zu01 * ng01b / (ng_den * ng_den) -
-                   (zu_sqr1 + zu_sqr2) * tempb / ng_den;
+        ng_denb +=
+            zu02 * ng02b / (ng_den * ng_den) + zu01 * ng01b / (ng_den * ng_den) - (zu_sqr1 + zu_sqr2) * tempb / ng_den;
         // 反向传播推力方向向量的模和模的平方
         zu_normb = zu_sqr_norm * ng_denb - (zu2 * z2b + zu1 * z1b + zu0 * z0b) / zu_sqr_norm;
         zu_sqr_normb = zu_norm * ng_denb + zu_normb / (2.0 * zu_norm);
@@ -322,58 +320,58 @@ class FlatnessMap {
         return;
     }
 
-   private:
+  private:
     // === 飞行器物理参数 ===
-    double mass;  // 飞行器质量 (kg)
-    double grav;  // 重力加速度 (m/s^2)
-    double dh;    // 水平阻力系数
-    double dv;    // 垂直阻力系数
-    double cp;    // 寄生阻力系数
-    double veps;  // 速度平滑因子（避免除零）
+    double mass; // 飞行器质量 (kg)
+    double grav; // 重力加速度 (m/s^2)
+    double dh;   // 水平阻力系数
+    double dv;   // 垂直阻力系数
+    double cp;   // 寄生阻力系数
+    double veps; // 速度平滑因子（避免除零）
 
     // === 运动状态分量 ===
-    double v0, v1, v2;  // 速度分量 (m/s)
-    double a0, a1, a2;  // 加速度分量 (m/s^2)
-    double v_dot_a;     // 速度和加速度的点积
+    double v0, v1, v2; // 速度分量 (m/s)
+    double a0, a1, a2; // 加速度分量 (m/s^2)
+    double v_dot_a;    // 速度和加速度的点积
 
     // === 推力方向相关变量 ===
-    double z0, z1, z2;     // 归一化的机体z轴方向（推力方向）
-    double dz0, dz1, dz2;  // 推力方向的时间导数
+    double z0, z1, z2;    // 归一化的机体z轴方向（推力方向）
+    double dz0, dz1, dz2; // 推力方向的时间导数
 
     // === 阻力和平滑项 ===
-    double cp_term;    // 速度的平滑模长：sqrt(v^2 + veps)
-    double w_term;     // 阻力项：1 + cp * |v|
-    double dh_over_m;  // 单位质量的水平阻力系数
+    double cp_term;   // 速度的平滑模长：sqrt(v^2 + veps)
+    double w_term;    // 阻力项：1 + cp * |v|
+    double dh_over_m; // 单位质量的水平阻力系数
 
     // === 推力方向向量（未归一化）===
-    double zu_sqr_norm;                // 推力方向向量的模的平方
-    double zu_norm;                    // 推力方向向量的模
-    double zu0, zu1, zu2;              // 推力方向向量各分量
-    double zu_sqr0, zu_sqr1, zu_sqr2;  // 推力方向向量各分量的平方
-    double zu01, zu12, zu02;           // 推力方向向量分量的交叉项
+    double zu_sqr_norm;               // 推力方向向量的模的平方
+    double zu_norm;                   // 推力方向向量的模
+    double zu0, zu1, zu2;             // 推力方向向量各分量
+    double zu_sqr0, zu_sqr1, zu_sqr2; // 推力方向向量各分量的平方
+    double zu01, zu12, zu02;          // 推力方向向量分量的交叉项
 
     // === 归一化梯度矩阵（用于求导）===
-    double ng00, ng01, ng02;  // 归一化梯度矩阵第一行
-    double ng11, ng12;        // 归一化梯度矩阵第二、三行
-    double ng22;              // 归一化梯度矩阵对角元素
-    double ng_den;            // 归一化梯度的分母
+    double ng00, ng01, ng02; // 归一化梯度矩阵第一行
+    double ng11, ng12;       // 归一化梯度矩阵第二、三行
+    double ng22;             // 归一化梯度矩阵对角元素
+    double ng_den;           // 归一化梯度的分母
 
     // === 中间计算项 ===
-    double dw_term;                       // w项的时间导数系数
-    double dz_term0, dz_term1, dz_term2;  // z方向导数的中间项
-    double f_term0, f_term1, f_term2;     // 力向量各分量
+    double dw_term;                      // w项的时间导数系数
+    double dz_term0, dz_term1, dz_term2; // z方向导数的中间项
+    double f_term0, f_term1, f_term2;    // 力向量各分量
 
     // === 姿态四元数相关变量 ===
-    double tilt_den;                // 倾斜四元数计算的分母
-    double tilt0, tilt1, tilt2;     // 倾斜四元数分量（不含偏航）
-    double c_half_psi, s_half_psi;  // 半偏航角的余弦和正弦
-    double c_psi, s_psi;            // 偏航角的余弦和正弦
+    double tilt_den;               // 倾斜四元数计算的分母
+    double tilt0, tilt1, tilt2;    // 倾斜四元数分量（不含偏航）
+    double c_half_psi, s_half_psi; // 半偏航角的余弦和正弦
+    double c_psi, s_psi;           // 偏航角的余弦和正弦
 
     // === 角速度相关变量 ===
-    double omg_den;   // 角速度计算的分母
-    double omg_term;  // 角速度计算的中间项
+    double omg_den;  // 角速度计算的分母
+    double omg_term; // 角速度计算的中间项
 };
-}  // namespace xgc2_math::trajectory::flatness
+} // namespace xgc2_math::trajectory::flatness
 
 #endif
 // NOLINTEND

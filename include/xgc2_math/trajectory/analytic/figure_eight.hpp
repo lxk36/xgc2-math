@@ -18,8 +18,8 @@ struct FigureEightCurveParameters2 {
 };
 
 class FigureEightCurveEvaluator2 final : public TrajectoryEvaluator2 {
-   public:
-    explicit FigureEightCurveEvaluator2(FigureEightCurveParameters2 params = {}) : params_(params) {
+  public:
+    explicit FigureEightCurveEvaluator2(const FigureEightCurveParameters2& params = {}) : params_(params) {
         params_.radius = analytic_detail::safeRadius(params_.radius);
         params_.line_speed = std::max(0.0, params_.line_speed);
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
@@ -50,20 +50,12 @@ class FigureEightCurveEvaluator2 final : public TrajectoryEvaluator2 {
         return TrajectoryValidator2::finite(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags;
-    }
-    const FigureEightCurveParameters2& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags; }
+    const FigureEightCurveParameters2& params() const { return params_; }
 
-   private:
+  private:
     FigureEightCurveParameters2 params_;
 };
 
@@ -77,8 +69,8 @@ struct FigureEightCurveParameters3 {
 };
 
 class FigureEightCurveEvaluator3 final : public TrajectoryEvaluator3 {
-   public:
-    explicit FigureEightCurveEvaluator3(FigureEightCurveParameters3 params = {}) : params_(params) {
+  public:
+    explicit FigureEightCurveEvaluator3(const FigureEightCurveParameters3& params = {}) : params_(params) {
         params_.radius = analytic_detail::safeRadius(params_.radius);
         params_.line_speed = std::max(0.0, params_.line_speed);
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
@@ -112,21 +104,13 @@ class FigureEightCurveEvaluator3 final : public TrajectoryEvaluator3 {
         return TrajectoryValidator3::finite(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags;
-    }
-    const FigureEightCurveParameters3& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags; }
+    const FigureEightCurveParameters3& params() const { return params_; }
 
-   private:
+  private:
     FigureEightCurveParameters3 params_;
 };
 
-}  // namespace xgc2_math::trajectory
+} // namespace xgc2_math::trajectory

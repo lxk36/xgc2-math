@@ -38,7 +38,7 @@ namespace xgc2_math::optimization {
 
 // 求根器参数命名空间
 namespace RootFinderParam {
-constexpr size_t highestOrder = 64;  // 支持的最高多项式阶数
+constexpr size_t highestOrder = 64; // 支持的最高多项式阶数
 }
 
 // 求根器私有函数命名空间
@@ -58,11 +58,11 @@ namespace RootFinderPriv {
  *     u, v, r 的长度分别为 lu, lv, lu
  */
 inline int polyMod(double* u, double* v, double* r, int lu, int lv) {
-    int orderu = lu - 1;  // 被除多项式的阶数
-    int orderv = lv - 1;  // 除多项式的阶数
+    int orderu = lu - 1; // 被除多项式的阶数
+    int orderv = lv - 1; // 除多项式的阶数
 
     // 将 u 复制到 r 中作为初始值
-    memcpy(r, u, lu * sizeof(double));
+    memcpy(r, u, static_cast<std::size_t>(lu) * sizeof(double));
 
     // 根据 v 的首项系数符号进行不同的处理
     if (v[0] < 0.0) {
@@ -127,7 +127,7 @@ inline double polyEval(double* p, int len, double x) {
 
             for (int i = len - 1; i >= 0; i--) {
                 retVal += p[i] * xn;
-                xn *= x;  // 累乘计算 x 的幂次
+                xn *= x; // 累乘计算 x 的幂次
             }
         }
     }
@@ -170,7 +170,7 @@ inline std::set<double> solveCub(double a, double b, double c, double d) {
                 roots.insert(-d / c);
         } else {
             // 二次方程：b*x^2 + c*x + d = 0
-            double discriminant = c * c - 4.0 * b * d;  // 判别式 Δ = b^2 - 4ac
+            double discriminant = c * c - 4.0 * b * d; // 判别式 Δ = b^2 - 4ac
             if (discriminant >= 0) {
                 double inv2b = 1.0 / (2.0 * b);
                 double y = sqrt(discriminant);
@@ -184,11 +184,10 @@ inline std::set<double> solveCub(double a, double b, double c, double d) {
         double inva = 1.0 / a;
         double invaa = inva * inva;
         double bb = b * b;
-        double bover3a = b * (1.0 / 3.0) * inva;  // b / (3a)
+        double bover3a = b * (1.0 / 3.0) * inva; // b / (3a)
         // 化为标准形式 x^3 + px + q = 0
         double p = (3.0 * a * c - bb) * (1.0 / 3.0) * invaa;
-        double halfq =
-            (2.0 * bb * b - 9.0 * a * b * c + 27.0 * a * a * d) * (0.5 / 27.0) * invaa * inva;
+        double halfq = (2.0 * bb * b - 9.0 * a * b * c + 27.0 * a * a * d) * (0.5 / 27.0) * invaa * inva;
         // 判别式：Δ = (q/2)^2 + (p/3)^3
         double yy = p * p * p / 27.0 + halfq * halfq;
 
@@ -288,16 +287,16 @@ inline int solveResolvent(double* x, double a, double b, double c) {
         B = (0.0 == A ? 0.0 : q / A);
 
         a /= 3.0;
-        x[0] = (A + B) - a;                // 第一个实根
-        x[1] = -0.5 * (A + B) - a;         // 另一个可能的实根（实部）
-        x[2] = 0.5 * sqrt(3.0) * (A - B);  // 虚部
+        x[0] = (A + B) - a;               // 第一个实根
+        x[1] = -0.5 * (A + B) - a;        // 另一个可能的实根（实部）
+        x[2] = 0.5 * sqrt(3.0) * (A - B); // 虚部
         // 如果虚部接近 0，说明有两个实根
         if (fabs(x[2]) < DBL_EPSILON) {
             x[2] = x[1];
             return 2;
         }
 
-        return 1;  // 只有一个实根
+        return 1; // 只有一个实根
     }
 }
 
@@ -340,12 +339,12 @@ inline std::set<double> solveQuartMonic(double a, double b, double c, double d) 
     // Ferrari 分解：h1 + h2 = y 且 h1*h2 = d  <==>  h^2 - y*h + d = 0 (其中 h 对应 q)
 
     D = y * y - 4.0 * d;
-    if (fabs(D) < DBL_EPSILON)  // D == 0
+    if (fabs(D) < DBL_EPSILON) // D == 0
     {
         q1 = q2 = y * 0.5;
         // g1 + g2 = a 且 g1 + g2 = b - y  <==>  g^2 - a*g + b - y = 0 (其中 p 对应 g)
         D = a * a - 4.0 * (b - y);
-        if (fabs(D) < DBL_EPSILON)  // D == 0
+        if (fabs(D) < DBL_EPSILON) // D == 0
         {
             p1 = p2 = a * 0.5;
         } else {
@@ -422,11 +421,10 @@ inline std::set<double> solveQuart(double a, double b, double c, double d, doubl
  * 方法：计算多项式伴随矩阵的特征值
  * 虚部模小于 tol 的复根被认为是实根
  */
-inline std::set<double> eigenSolveRealRoots(const Eigen::VectorXd& coeffs, double lbound,
-                                            double ubound, double tol) {
+inline std::set<double> eigenSolveRealRoots(const Eigen::VectorXd& coeffs, double lbound, double ubound, double tol) {
     std::set<double> rts;
 
-    int order = (int)coeffs.size() - 1;
+    int order = static_cast<int>(coeffs.size()) - 1;
     // 构造首一多项式系数
     Eigen::VectorXd monicCoeffs(order + 1);
     monicCoeffs << 1.0, coeffs.tail(order) / coeffs(0);
@@ -443,7 +441,7 @@ inline std::set<double> eigenSolveRealRoots(const Eigen::VectorXd& coeffs, doubl
     // 计算伴随矩阵的特征值（即多项式的根）
     Eigen::VectorXcd eivals = companionMat.eigenvalues();
     double real;
-    int eivalsNum = eivals.size();
+    int eivalsNum = static_cast<int>(eivals.size());
     for (int i = 0; i < eivalsNum; i++) {
         real = eivals(i).real();
         // 筛选虚部足够小且在指定区间内的根
@@ -465,7 +463,7 @@ inline std::set<double> eigenSolveRealRoots(const Eigen::VectorXd& coeffs, doubl
  * 第 i 个序列的大小为 szSeq[i]，存储在 sturmSeqs[i][] 中，0 <= i < len
  * Sturm 定理：区间端点的符号变化数之差等于区间内实根的个数
  */
-inline double numSignVar(double x, double** sturmSeqs, int* szSeq, int len) {
+inline int numSignVar(double x, double** sturmSeqs, int* szSeq, int len) {
     double y, lasty;
     int signVar = 0;
     lasty = polyEval(sturmSeqs[0], szSeq[0], x);
@@ -479,7 +477,7 @@ inline double numSignVar(double x, double** sturmSeqs, int* szSeq, int len) {
     }
 
     return signVar;
-};
+}
 
 /**
  * @brief 计算多项式的导数系数
@@ -488,7 +486,7 @@ inline double numSignVar(double x, double** sturmSeqs, int* szSeq, int len) {
  * @param len 原多项式系数数组的长度
  */
 inline void polyDeri(double* coeffs, double* dcoeffs, int len) {
-    int horder = len - 1;  // 多项式的阶数
+    int horder = len - 1; // 多项式的阶数
     for (int i = 0; i < horder; i++) {
         // 对 x^(horder-i) 求导得到 (horder-i) * x^(horder-i-1)
         dcoeffs[i] = (horder - i) * coeffs[i];
@@ -512,8 +510,8 @@ inline void polyDeri(double* coeffs, double* dcoeffs, int len) {
  * 结合了牛顿法和二分法，保证收敛性
  */
 template <typename F, typename DF>
-inline double safeNewton(const F& func, const DF& dfunc, const double& l, const double& h,
-                         const double& tol, const int& maxIts) {
+inline double safeNewton(const F& func, const DF& dfunc, const double& l, const double& h, const double& tol,
+                         const int& maxIts) {
     double xh, xl;
     double fl = func(l);
     double fh = func(h);
@@ -533,30 +531,29 @@ inline double safeNewton(const F& func, const DF& dfunc, const double& l, const 
         xl = h;
     }
 
-    double rts = 0.5 * (xl + xh);  // 初始猜测值为区间中点
-    double dxold = fabs(xh - xl);  // 上一次的步长
+    double rts = 0.5 * (xl + xh); // 初始猜测值为区间中点
+    double dxold = fabs(xh - xl); // 上一次的步长
     double dx = dxold;
     double f = func(rts);
     double df = dfunc(rts);
     double temp;
     for (int j = 0; j < maxIts; j++) {
         // 如果牛顿法会超出边界或收敛太慢，则使用二分法
-        if ((((rts - xh) * df - f) * ((rts - xl) * df - f) > 0.0) ||
-            (fabs(2.0 * f) > fabs(dxold * df))) {
+        if ((((rts - xh) * df - f) * ((rts - xl) * df - f) > 0.0) || (fabs(2.0 * f) > fabs(dxold * df))) {
             dxold = dx;
-            dx = 0.5 * (xh - xl);  // 二分法
+            dx = 0.5 * (xh - xl); // 二分法
             rts = xl + dx;
             if (xl == rts) {
-                break;  // 达到机器精度，停止迭代
+                break; // 达到机器精度，停止迭代
             }
         } else {
             // 使用牛顿法
             dxold = dx;
             dx = f / df;
             temp = rts;
-            rts -= dx;  // 牛顿迭代：x_{n+1} = x_n - f(x_n)/f'(x_n)
+            rts -= dx; // 牛顿迭代：x_{n+1} = x_n - f(x_n)/f'(x_n)
             if (temp == rts) {
-                break;  // 达到机器精度，停止迭代
+                break; // 达到机器精度，停止迭代
             }
         }
 
@@ -591,15 +588,18 @@ inline double safeNewton(const F& func, const DF& dfunc, const double& l, const 
  * 要求：coeffs(lbound) * coeffs(ubound) < 0（区间两端函数值异号）
  *       lbound < ubound
  */
-inline double shrinkInterval(double* coeffs, int numCoeffs, double lbound, double ubound,
-                             double tol) {
+inline double shrinkInterval(double* coeffs, int numCoeffs, double lbound, double ubound, double tol) {
     // 计算多项式的导数系数
     double* dcoeffs = new double[numCoeffs - 1];
     polyDeri(coeffs, dcoeffs, numCoeffs);
     // 定义函数和导数的 lambda 表达式
-    auto func = [&coeffs, &numCoeffs](double x) { return polyEval(coeffs, numCoeffs, x); };
-    auto dfunc = [&dcoeffs, &numCoeffs](double x) { return polyEval(dcoeffs, numCoeffs - 1, x); };
-    constexpr int maxDblIts = 128;  // 最大迭代次数
+    auto func = [&coeffs, &numCoeffs](double x) {
+        return polyEval(coeffs, numCoeffs, x);
+    };
+    auto dfunc = [&dcoeffs, &numCoeffs](double x) {
+        return polyEval(dcoeffs, numCoeffs - 1, x);
+    };
+    constexpr int maxDblIts = 128; // 最大迭代次数
     // 使用安全牛顿法求根
     double rts = safeNewton(func, dfunc, lbound, ubound, tol, maxDblIts);
     delete[] dcoeffs;
@@ -624,9 +624,9 @@ inline double shrinkInterval(double* coeffs, int numCoeffs, double lbound, doubl
  *       lnv = numSignVar(l), rnv = numSignVar(r)
  *       sturmSeqs[0](x) 在 (l, r) 内至少有一个根
  */
-inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int rnv, double tol,
-                         double** sturmSeqs, int* szSeq, int len, std::set<double>& rts) {
-    int nrts = lnv - rnv;  // 根据 Sturm 定理，区间内根的个数
+inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int rnv, double tol, double** sturmSeqs,
+                         int* szSeq, int len, std::set<double>& rts) {
+    int nrts = lnv - rnv; // 根据 Sturm 定理，区间内根的个数
     double fm;
     double m;
 
@@ -641,7 +641,7 @@ inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int 
             return;
         } else {
             // 端点函数值同号（可能是重根），使用二分法
-            int maxDblIts = 128;  // 最大迭代次数
+            int maxDblIts = 128; // 最大迭代次数
 
             for (int i = 0; i < maxDblIts; i++) {
                 // 计算偶数重根：使用 Sturm 序列的第二项（导数）
@@ -650,7 +650,7 @@ inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int 
                     return;
                 }
 
-                m = (l + r) / 2.0;  // 取区间中点
+                m = (l + r) / 2.0; // 取区间中点
                 fm = polyEval(sturmSeqs[0], szSeq[0], m);
 
                 // 如果中点处多项式值为 0 或区间足够小，找到根
@@ -674,11 +674,11 @@ inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int 
         }
     } else if (nrts > 1) {
         // 区间内存在多个根
-        int maxDblIts = 128;  // 最大迭代次数
+        int maxDblIts = 128; // 最大迭代次数
 
         int mnv;
-        int bias = 0;         // 偏移量，用于处理中点恰好为根的情况
-        bool biased = false;  // 是否需要偏移标志
+        int bias = 0;        // 偏移量，用于处理中点恰好为根的情况
+        bool biased = false; // 是否需要偏移标志
         for (int i = 0; i < maxDblIts; i++) {
             bias = biased ? bias : 0;
             if (!biased) {
@@ -721,7 +721,7 @@ inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int 
         rts.insert(m);
         return;
     }
-};
+}
 
 /**
  * @brief 使用 Sturm 定理隔离并计算多项式在指定区间内的所有实根
@@ -739,12 +739,11 @@ inline void recurIsolate(double l, double r, double fl, double fr, int lnv, int 
  * 2. 构造 Sturm 序列
  * 3. 使用递归方法隔离所有根
  */
-inline std::set<double> isolateRealRoots(const Eigen::VectorXd& coeffs, double lbound,
-                                         double ubound, double tol) {
+inline std::set<double> isolateRealRoots(const Eigen::VectorXd& coeffs, double lbound, double ubound, double tol) {
     std::set<double> rts;
 
     // 计算首一多项式系数（最高次项系数归一化为 1）
-    int order = (int)coeffs.size() - 1;
+    int order = static_cast<int>(coeffs.size()) - 1;
     Eigen::VectorXd monicCoeffs(order + 1);
     monicCoeffs << 1.0, coeffs.tail(order) / coeffs(0);
 
@@ -769,7 +768,7 @@ inline std::set<double> isolateRealRoots(const Eigen::VectorXd& coeffs, double l
     // 计算相邻非零系数的比值的绝对值
     Eigen::VectorXd kojimaVec =
         nonzeroCoeffs.tail(nonzeros - 1).cwiseQuotient(nonzeroCoeffs.head(nonzeros - 1)).cwiseAbs();
-    kojimaVec.tail(1) /= 2.0;  // 最后一项特殊处理
+    kojimaVec.tail(1) /= 2.0; // 最后一项特殊处理
     double rho_k = 2.0 * kojimaVec.maxCoeff();
 
     // 选择更紧的界，然后放宽 1.0 以得到开区间
@@ -780,10 +779,9 @@ inline std::set<double> isolateRealRoots(const Eigen::VectorXd& coeffs, double l
     ubound = std::min(ubound, rho);
 
     // 构造 Sturm 序列
-    int len = monicCoeffs.size();
+    int len = static_cast<int>(monicCoeffs.size());
     double sturmSeqs[(RootFinderParam::highestOrder + 1) * (RootFinderParam::highestOrder + 1)];
-    int szSeq[RootFinderParam::highestOrder + 1] = {
-        0};  // 显式初始化为零（gcc 在 -O3 下可能忽略此初始化）
+    int szSeq[RootFinderParam::highestOrder + 1] = {0}; // 显式初始化为零（gcc 在 -O3 下可能忽略此初始化）
     double* offsetSeq[RootFinderParam::highestOrder + 1];
     int num = 0;
 
@@ -804,9 +802,8 @@ inline std::set<double> isolateRealRoots(const Eigen::VectorXd& coeffs, double l
     int idx = 0;
     while (!remainderConstant) {
         // 计算多项式除法的余数
-        szSeq[idx + 2] =
-            polyMod(offsetSeq[idx], offsetSeq[idx + 1], &(sturmSeqs[(idx + 3) * len - szSeq[idx]]),
-                    szSeq[idx], szSeq[idx + 1]);
+        szSeq[idx + 2] = polyMod(offsetSeq[idx], offsetSeq[idx + 1], &(sturmSeqs[(idx + 3) * len - szSeq[idx]]),
+                                 szSeq[idx], szSeq[idx + 1]);
         offsetSeq[idx + 2] = sturmSeqs + (idx + 3) * len - szSeq[idx + 2];
 
         // 如果余数是常数，序列构造完成
@@ -821,15 +818,14 @@ inline std::set<double> isolateRealRoots(const Eigen::VectorXd& coeffs, double l
     }
 
     // 递归隔离开区间内的所有不同根
-    recurIsolate(lbound, ubound, polyEval(offsetSeq[0], szSeq[0], lbound),
-                 polyEval(offsetSeq[0], szSeq[0], ubound),
-                 numSignVar(lbound, offsetSeq, szSeq, len),
-                 numSignVar(ubound, offsetSeq, szSeq, len), tol, offsetSeq, szSeq, len, rts);
+    recurIsolate(lbound, ubound, polyEval(offsetSeq[0], szSeq[0], lbound), polyEval(offsetSeq[0], szSeq[0], ubound),
+                 numSignVar(lbound, offsetSeq, szSeq, len), numSignVar(ubound, offsetSeq, szSeq, len), tol, offsetSeq,
+                 szSeq, len, rts);
 
     return rts;
 }
 
-}  // namespace RootFinderPriv
+} // namespace RootFinderPriv
 
 // RootFinder 命名空间：多项式求根器的公共接口
 namespace RootFinder {
@@ -851,8 +847,7 @@ inline Eigen::VectorXd polyConv(const Eigen::VectorXd& lCoef, const Eigen::Vecto
     // 卷积计算：result[i] = sum(lCoef[j] * rCoef[i-j])
     for (int i = 0; i < result.size(); i++) {
         for (int j = 0; j <= i; j++) {
-            result(i) +=
-                (j < lCoef.size() && (i - j) < rCoef.size()) ? (lCoef(j) * rCoef(i - j)) : 0;
+            result(i) += (j < lCoef.size() && (i - j) < rCoef.size()) ? (lCoef(j) * rCoef(i - j)) : 0;
         }
     }
 
@@ -938,8 +933,8 @@ inline Eigen::VectorXd polyConv(const Eigen::VectorXd& lCoef, const Eigen::Vecto
  * 算法利用了对称性：coef(j) * coef(i-j) 出现两次（当 j != i-j 时）
  */
 inline Eigen::VectorXd polySqr(const Eigen::VectorXd& coef) {
-    int coefSize = coef.size();
-    int resultSize = coefSize * 2 - 1;  // 结果多项式的长度
+    int coefSize = static_cast<int>(coef.size());
+    int resultSize = coefSize * 2 - 1; // 结果多项式的长度
     int lbound, rbound;
     Eigen::VectorXd result(resultSize);
     double temp;
@@ -951,13 +946,13 @@ inline Eigen::VectorXd polySqr(const Eigen::VectorXd& coef) {
         rbound = coefSize < (i + 1) ? coefSize : (i + 1);
         rbound += lbound;
         // 利用对称性优化计算
-        if (rbound & 1)  // 比 rbound % 2 == 1 更快的位运算判断奇偶
+        if (rbound & 1) // 比 rbound % 2 == 1 更快的位运算判断奇偶
         {
-            rbound >>= 1;  // 比 rbound /= 2 更快的位运算除以2
+            rbound >>= 1; // 比 rbound /= 2 更快的位运算除以2
             // 中间项只出现一次
             temp += coef(rbound) * coef(rbound);
         } else {
-            rbound >>= 1;  // 比 rbound /= 2 更快的位运算除以2
+            rbound >>= 1; // 比 rbound /= 2 更快的位运算除以2
         }
 
         // 其他项都出现两次（利用对称性）
@@ -986,7 +981,7 @@ inline Eigen::VectorXd polySqr(const Eigen::VectorXd& coef) {
  */
 inline double polyVal(const Eigen::VectorXd& coeffs, double x, bool numericalStability = true) {
     double retVal = 0.0;
-    int order = (int)coeffs.size() - 1;
+    int order = static_cast<int>(coeffs.size()) - 1;
 
     if (order >= 0) {
         if (fabs(x) < DBL_EPSILON) {
@@ -1003,12 +998,12 @@ inline double polyVal(const Eigen::VectorXd& coeffs, double x, bool numericalSta
 
                 for (int i = order; i >= 0; i--) {
                     retVal += coeffs(i) * xn;
-                    xn *= x;  // 累乘计算 x 的幂次
+                    xn *= x; // 累乘计算 x 的幂次
                 }
             } else {
                 // Horner 方法：p(x) = (...((a0*x + a1)*x + a2)*x + ... + an)
                 // 计算效率高但数值稳定性差
-                int len = coeffs.size();
+                int len = static_cast<int>(coeffs.size());
 
                 for (int i = 0; i < len; i++) {
                     retVal = retVal * x + coeffs(i);
@@ -1036,7 +1031,7 @@ inline int countRoots(const Eigen::VectorXd& coeffs, double l, double r) {
     int nRoots = 0;
 
     // 去除前导零系数，确定有效系数个数
-    int originalSize = coeffs.size();
+    int originalSize = static_cast<int>(coeffs.size());
     int valid = originalSize;
     for (int i = 0; i < originalSize; i++) {
         if (fabs(coeffs(i)) < DBL_EPSILON) {
@@ -1050,15 +1045,13 @@ inline int countRoots(const Eigen::VectorXd& coeffs, double l, double r) {
     if (valid > 0 && fabs(coeffs(originalSize - 1)) > DBL_EPSILON) {
         // 构造首一多项式（最高次项系数归一化为 1）
         Eigen::VectorXd monicCoeffs(valid);
-        monicCoeffs << 1.0,
-            coeffs.segment(originalSize - valid + 1, valid - 1) / coeffs(originalSize - valid);
+        monicCoeffs << 1.0, coeffs.segment(originalSize - valid + 1, valid - 1) / coeffs(originalSize - valid);
 
         // 构造 Sturm 序列
-        int len = monicCoeffs.size();
+        int len = static_cast<int>(monicCoeffs.size());
         int order = len - 1;
         double sturmSeqs[(RootFinderParam::highestOrder + 1) * (RootFinderParam::highestOrder + 1)];
-        int szSeq[RootFinderParam::highestOrder + 1] = {
-            0};  // 显式初始化为零（gcc 在 -O3 下可能忽略此初始化）
+        int szSeq[RootFinderParam::highestOrder + 1] = {0}; // 显式初始化为零（gcc 在 -O3 下可能忽略此初始化）
         int num = 0;
 
         // 第一个序列是原多项式，第二个是其导数
@@ -1075,18 +1068,15 @@ inline int countRoots(const Eigen::VectorXd& coeffs, double l, double r) {
         int idx = 0;
         while (!remainderConstant) {
             // 计算多项式除法的余数
-            szSeq[idx + 2] = RootFinderPriv::polyMod(&(sturmSeqs[(idx + 1) * len - szSeq[idx]]),
-                                                     &(sturmSeqs[(idx + 2) * len - szSeq[idx + 1]]),
-                                                     &(sturmSeqs[(idx + 3) * len - szSeq[idx]]),
-                                                     szSeq[idx], szSeq[idx + 1]);
+            szSeq[idx + 2] = RootFinderPriv::polyMod(
+                &(sturmSeqs[(idx + 1) * len - szSeq[idx]]), &(sturmSeqs[(idx + 2) * len - szSeq[idx + 1]]),
+                &(sturmSeqs[(idx + 3) * len - szSeq[idx]]), szSeq[idx], szSeq[idx + 1]);
             remainderConstant = szSeq[idx + 2] == 1;
             // 归一化余数
             for (int i = 1; i < szSeq[idx + 2]; i++) {
-                sturmSeqs[(idx + 3) * len - szSeq[idx + 2] + i] /=
-                    -fabs(sturmSeqs[(idx + 3) * len - szSeq[idx + 2]]);
+                sturmSeqs[(idx + 3) * len - szSeq[idx + 2] + i] /= -fabs(sturmSeqs[(idx + 3) * len - szSeq[idx + 2]]);
             }
-            sturmSeqs[(idx + 3) * len - szSeq[idx + 2]] /=
-                -fabs(sturmSeqs[(idx + 3) * len - szSeq[idx + 2]]);
+            sturmSeqs[(idx + 3) * len - szSeq[idx + 2]] /= -fabs(sturmSeqs[(idx + 3) * len - szSeq[idx + 2]]);
             num++;
             idx++;
         }
@@ -1100,10 +1090,10 @@ inline int countRoots(const Eigen::VectorXd& coeffs, double l, double r) {
             yr = RootFinderPriv::polyEval(&(sturmSeqs[(i + 1) * len - szSeq[i]]), szSeq[i], r);
             // 统计符号变化：相邻项符号不同或为零时计数
             if (lastyl == 0.0 || lastyl * yl < 0.0) {
-                ++nRoots;  // 左端点符号变化数增加
+                ++nRoots; // 左端点符号变化数增加
             }
             if (lastyr == 0.0 || lastyr * yr < 0.0) {
-                --nRoots;  // 右端点符号变化数减少（因为要计算差值）
+                --nRoots; // 右端点符号变化数减少（因为要计算差值）
             }
             lastyl = yl;
             lastyr = yr;
@@ -1134,13 +1124,13 @@ inline int countRoots(const Eigen::VectorXd& coeffs, double l, double r) {
  * - coeffs(lbound) != 0, coeffs(ubound) != 0
  * - lbound < ubound
  */
-inline std::set<double> solvePolynomial(const Eigen::VectorXd& coeffs, double lbound, double ubound,
-                                        double tol, bool isolation = true) {
+inline std::set<double> solvePolynomial(const Eigen::VectorXd& coeffs, double lbound, double ubound, double tol,
+                                        bool isolation = true) {
     std::set<double> rts;
 
     // 去除前导零系数（最高次项的零系数）
-    int valid = coeffs.size();
-    for (int i = 0; i < coeffs.size(); i++) {
+    int valid = static_cast<int>(coeffs.size());
+    for (int i = 0; i < static_cast<int>(coeffs.size()); i++) {
         if (fabs(coeffs(i)) < DBL_EPSILON) {
             valid--;
         } else {
@@ -1149,7 +1139,7 @@ inline std::set<double> solvePolynomial(const Eigen::VectorXd& coeffs, double lb
     }
 
     // 去除尾部零系数（常数项及低次项的零系数）
-    int offset = 0;  // 尾部零系数个数（对应 x=0 根的重数）
+    int offset = 0; // 尾部零系数个数（对应 x=0 根的重数）
     int nonzeros = valid;
     if (valid > 0) {
         for (int i = 0; i < valid; i++) {
@@ -1178,8 +1168,7 @@ inline std::set<double> solvePolynomial(const Eigen::VectorXd& coeffs, double lb
 
         if (nonzeros <= 5) {
             // 低阶多项式（≤ 4 次）：使用解析解（三次、四次方程公式）
-            rts = RootFinderPriv::solveQuart(ncoeffs(0), ncoeffs(1), ncoeffs(2), ncoeffs(3),
-                                             ncoeffs(4));
+            rts = RootFinderPriv::solveQuart(ncoeffs(0), ncoeffs(1), ncoeffs(2), ncoeffs(3), ncoeffs(4));
         } else {
             // 高阶多项式：使用数值方法
             if (isolation) {
@@ -1200,17 +1189,17 @@ inline std::set<double> solvePolynomial(const Eigen::VectorXd& coeffs, double lb
     // 过滤掉不在指定区间 (lbound, ubound) 内的根
     for (auto it = rts.begin(); it != rts.end();) {
         if (*it > lbound && *it < ubound) {
-            it++;  // 保留在区间内的根
+            it++; // 保留在区间内的根
         } else {
-            it = rts.erase(it);  // 删除区间外的根
+            it = rts.erase(it); // 删除区间外的根
         }
     }
 
     return rts;
 }
 
-}  // namespace RootFinder
+} // namespace RootFinder
 
-}  // namespace xgc2_math::optimization
+} // namespace xgc2_math::optimization
 #endif
 // NOLINTEND

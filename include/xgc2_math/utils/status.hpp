@@ -1,6 +1,8 @@
 #ifndef XGC2_MATH_STATUS_HPP
 #define XGC2_MATH_STATUS_HPP
 
+#include <algorithm>
+
 namespace xgc2_math {
 
 template <typename Status> struct StatusDescriptor {
@@ -10,15 +12,16 @@ template <typename Status> struct StatusDescriptor {
 
 template <typename Status> struct StatusRegistry;
 
-template <typename Status> inline const auto& registeredStatuses() { return StatusRegistry<Status>::statuses; }
+template <typename Status> inline const auto& registeredStatuses() {
+    return StatusRegistry<Status>::statuses;
+}
 
 template <typename Status> inline const StatusDescriptor<Status>* statusDescriptor(Status status) {
-    for (const auto& descriptor : registeredStatuses<Status>()) {
-        if (descriptor.status == status) {
-            return &descriptor;
-        }
-    }
-    return nullptr;
+    const auto& statuses = registeredStatuses<Status>();
+    const auto it = std::find_if(statuses.begin(), statuses.end(), [status](const auto& descriptor) {
+        return descriptor.status == status;
+    });
+    return it != statuses.end() ? &(*it) : nullptr;
 }
 
 template <typename Status> inline const char* toString(Status status) {

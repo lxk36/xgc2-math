@@ -47,7 +47,9 @@ namespace xgc2_math::optimization::minco {
  * 带状 LU 分解的时间复杂度为 O(N)，远优于一般矩阵的 O(N³)。
  */
 class BandedSystem {
-   public:
+  public:
+    BandedSystem() = default;
+
     // The size of A, as well as the lower/upper
     // banded width p/q are needed
     /**
@@ -82,14 +84,14 @@ class BandedSystem {
         return;
     }
 
-   private:
-    int N;        // 矩阵维度
-    int lowerBw;  // 下带宽
-    int upperBw;  // 上带宽
+  private:
+    int N{0};       // 矩阵维度
+    int lowerBw{0}; // 下带宽
+    int upperBw{0}; // 上带宽
     // Compulsory nullptr initialization here
-    double* ptrData = nullptr;  // 带状矩阵数据指针（必须初始化为空指针）
+    double* ptrData = nullptr; // 带状矩阵数据指针（必须初始化为空指针）
 
-   public:
+  public:
     // Reset the matrix to zero
     /**
      * @brief 将矩阵所有元素重置为零
@@ -109,9 +111,7 @@ class BandedSystem {
      * 存储方式参考《Matrix Computation》：
      * 映射公式：ptrData[(i-j+upperBw)*N+j]
      */
-    inline const double& operator()(const int& i, const int& j) const {
-        return ptrData[(i - j + upperBw) * N + j];
-    }
+    inline const double& operator()(const int& i, const int& j) const { return ptrData[(i - j + upperBw) * N + j]; }
 
     /**
      * @brief 访问带状矩阵元素（可修改版本）
@@ -119,9 +119,7 @@ class BandedSystem {
      * @param j 列索引
      * @return 矩阵元素的引用
      */
-    inline double& operator()(const int& i, const int& j) {
-        return ptrData[(i - j + upperBw) * N + j];
-    }
+    inline double& operator()(const int& i, const int& j) { return ptrData[(i - j + upperBw) * N + j]; }
 
     // This function conducts banded LU factorization in place
     // Note that NO PIVOT is applied on the matrix "A" for efficiency!!!
@@ -137,15 +135,15 @@ class BandedSystem {
         double cVl;
         // 对每一列进行 LU 分解
         for (int k = 0; k <= N - 2; k++) {
-            iM = std::min(k + lowerBw, N - 1);  // 下带宽限制的最大行索引
-            cVl = operator()(k, k);             // 主元素
+            iM = std::min(k + lowerBw, N - 1); // 下带宽限制的最大行索引
+            cVl = operator()(k, k);            // 主元素
             // 计算 L 矩阵的第 k 列（在主对角线以下）
             for (int i = k + 1; i <= iM; i++) {
                 if (operator()(i, k) != 0.0) {
-                    operator()(i, k) /= cVl;  // L[i,k] = A[i,k] / A[k,k]
+                    operator()(i, k) /= cVl; // L[i,k] = A[i,k] / A[k,k]
                 }
             }
-            jM = std::min(k + upperBw, N - 1);  // 上带宽限制的最大列索引
+            jM = std::min(k + upperBw, N - 1); // 上带宽限制的最大列索引
             // 更新 U 矩阵的剩余部分
             for (int j = k + 1; j <= jM; j++) {
                 cVl = operator()(k, j);
@@ -173,8 +171,7 @@ class BandedSystem {
      * 1. 前向替换求解 Ly=b
      * 2. 后向替换求解 Ux=y
      */
-    template <typename EIGENMAT>
-    inline void solve(EIGENMAT& b) const {
+    template <typename EIGENMAT> inline void solve(EIGENMAT& b) const {
         int iM;
         // 前向替换：求解 Ly = b（L 为单位下三角矩阵）
         for (int j = 0; j <= N - 1; j++) {
@@ -187,7 +184,7 @@ class BandedSystem {
         }
         // 后向替换：求解 Ux = y（U 为上三角矩阵）
         for (int j = N - 1; j >= 0; j--) {
-            b.row(j) /= operator()(j, j);  // 除以对角元素
+            b.row(j) /= operator()(j, j); // 除以对角元素
             iM = std::max(0, j - upperBw);
             for (int i = iM; i <= j - 1; i++) {
                 if (operator()(i, j) != 0.0) {
@@ -209,8 +206,7 @@ class BandedSystem {
      * 1. 前向替换求解 U^T y = b
      * 2. 后向替换求解 L^T x = y
      */
-    template <typename EIGENMAT>
-    inline void solveAdj(EIGENMAT& b) const {
+    template <typename EIGENMAT> inline void solveAdj(EIGENMAT& b) const {
         int iM;
         // 前向替换：求解 U^T y = b（U^T 为下三角矩阵）
         for (int j = 0; j <= N - 1; j++) {
@@ -247,24 +243,22 @@ class BandedSystem {
  * 边界条件：位置(P)和速度(V)
  */
 class MINCO_S2NU {
-   public:
+  public:
     MINCO_S2NU() = default;
     // 析构函数：销毁带状矩阵系统
-    ~MINCO_S2NU() {
-        A.destroy();
-    }
+    ~MINCO_S2NU() { A.destroy(); }
 
-   private:
-    int N;                               // 轨迹段数
-    Eigen::Matrix<double, 3, 2> headPV;  // 起始状态：位置(P)和速度(V)，3维空间
-    Eigen::Matrix<double, 3, 2> tailPV;  // 终止状态：位置(P)和速度(V)，3维空间
-    BandedSystem A;                      // 带状线性系统矩阵
-    Eigen::MatrixX3d b;                  // 多项式系数矩阵（4N×3）
-    Eigen::VectorXd T1;                  // 每段时间 t
-    Eigen::VectorXd T2;                  // 每段时间的平方 t²
-    Eigen::VectorXd T3;                  // 每段时间的三次方 t³
+  private:
+    int N;                              // 轨迹段数
+    Eigen::Matrix<double, 3, 2> headPV; // 起始状态：位置(P)和速度(V)，3维空间
+    Eigen::Matrix<double, 3, 2> tailPV; // 终止状态：位置(P)和速度(V)，3维空间
+    BandedSystem A;                     // 带状线性系统矩阵
+    Eigen::MatrixX3d b;                 // 多项式系数矩阵（4N×3）
+    Eigen::VectorXd T1;                 // 每段时间 t
+    Eigen::VectorXd T2;                 // 每段时间的平方 t²
+    Eigen::VectorXd T3;                 // 每段时间的三次方 t³
 
-   public:
+  public:
     /**
      * @brief 设置边界条件
      * @param headState 起始状态 [位置, 速度]（3×2矩阵）
@@ -279,8 +273,8 @@ class MINCO_S2NU {
         N = pieceNum;
         headPV = headState;
         tailPV = tailState;
-        A.create(4 * N, 4, 4);  // 创建 4N×4N 的带状矩阵，带宽为4
-        b.resize(4 * N, 3);     // 系数矩阵：4个系数/段 × N段 × 3个维度
+        A.create(4 * N, 4, 4); // 创建 4N×4N 的带状矩阵，带宽为4
+        b.resize(4 * N, 3);    // 系数矩阵：4个系数/段 × N段 × 3个维度
         T1.resize(N);
         T2.resize(N);
         T3.resize(N);
@@ -299,17 +293,17 @@ class MINCO_S2NU {
      */
     inline void setParameters(const Eigen::Matrix3Xd& inPs, const Eigen::VectorXd& ts) {
         T1 = ts;
-        T2 = T1.cwiseProduct(T1);  // 逐元素平方
-        T3 = T2.cwiseProduct(T1);  // 逐元素三次方
+        T2 = T1.cwiseProduct(T1); // 逐元素平方
+        T3 = T2.cwiseProduct(T1); // 逐元素三次方
 
         A.reset();
         b.setZero();
 
         // 起始边界条件：位置和速度
-        A(0, 0) = 1.0;                         // p(0) = c0
-        A(1, 1) = 1.0;                         // v(0) = c1
-        b.row(0) = headPV.col(0).transpose();  // 起始位置
-        b.row(1) = headPV.col(1).transpose();  // 起始速度
+        A(0, 0) = 1.0;                        // p(0) = c0
+        A(1, 1) = 1.0;                        // v(0) = c1
+        b.row(0) = headPV.col(0).transpose(); // 起始位置
+        b.row(1) = headPV.col(1).transpose(); // 起始速度
 
         // 中间段约束：加速度连续性 + 位置约束
         for (int i = 0; i < N - 1; i++) {
@@ -337,7 +331,7 @@ class MINCO_S2NU {
             A(4 * i + 5, 4 * i + 3) = 3.0 * T2(i);
             A(4 * i + 5, 4 * i + 5) = -1.0;
 
-            b.row(4 * i + 3) = inPs.col(i).transpose();  // 中间路径点
+            b.row(4 * i + 3) = inPs.col(i).transpose(); // 中间路径点
         }
 
         // 终止边界条件：位置和速度
@@ -349,12 +343,12 @@ class MINCO_S2NU {
         A(4 * N - 1, 4 * N - 2) = 2 * T1(N - 1);
         A(4 * N - 1, 4 * N - 1) = 3 * T2(N - 1);
 
-        b.row(4 * N - 2) = tailPV.col(0).transpose();  // 终止位置
-        b.row(4 * N - 1) = tailPV.col(1).transpose();  // 终止速度
+        b.row(4 * N - 2) = tailPV.col(0).transpose(); // 终止位置
+        b.row(4 * N - 1) = tailPV.col(1).transpose(); // 终止速度
 
         // 求解线性系统
-        A.factorizeLU();  // LU 分解
-        A.solve(b);       // 求解系数 b
+        A.factorizeLU(); // LU 分解
+        A.solve(b);      // 求解系数 b
 
         return;
     }
@@ -369,9 +363,7 @@ class MINCO_S2NU {
         traj.clear();
         traj.reserve(N);
         for (int i = 0; i < N; i++) {
-            traj.emplace_back(
-                T1(i),
-                b.block<4, 3>(4 * i, 0).transpose().rowwise().reverse());  // 反转系数顺序为降幂排列
+            traj.emplace_back(T1(i), b.block<4, 3>(4 * i, 0).transpose().rowwise().reverse()); // 反转系数顺序为降幂排列
         }
         return;
     }
@@ -397,9 +389,7 @@ class MINCO_S2NU {
      * @brief 获取多项式系数
      * @return 系数矩阵（4N×3）
      */
-    inline const Eigen::MatrixX3d& getCoeffs(void) const {
-        return b;
-    }
+    inline const Eigen::MatrixX3d& getCoeffs(void) const { return b; }
 
     /**
      * @brief 计算能量对多项式系数的偏导数
@@ -429,8 +419,7 @@ class MINCO_S2NU {
     inline void getEnergyPartialGradByTimes(Eigen::VectorXd& gdT) const {
         gdT.resize(N);
         for (int i = 0; i < N; i++) {
-            gdT(i) = 4.0 * b.row(4 * i + 2).squaredNorm() +
-                     24.0 * b.row(4 * i + 2).dot(b.row(4 * i + 3)) * T1(i) +
+            gdT(i) = 4.0 * b.row(4 * i + 2).squaredNorm() + 24.0 * b.row(4 * i + 2).dot(b.row(4 * i + 3)) * T1(i) +
                      36.0 * b.row(4 * i + 3).squaredNorm() * T2(i);
         }
         return;
@@ -446,15 +435,14 @@ class MINCO_S2NU {
      * 使用伴随方法（adjoint method）计算梯度，将系数梯度传播到路径点和时间。
      * 这是自动微分中的反向模式（reverse mode）。
      */
-    inline void propogateGrad(const Eigen::MatrixX3d& partialGradByCoeffs,
-                              const Eigen::VectorXd& partialGradByTimes,
+    inline void propogateGrad(const Eigen::MatrixX3d& partialGradByCoeffs, const Eigen::VectorXd& partialGradByTimes,
                               Eigen::Matrix3Xd& gradByPoints, Eigen::VectorXd& gradByTimes)
 
     {
         gradByPoints.resize(3, N - 1);
         gradByTimes.resize(N);
         Eigen::MatrixX3d adjGrad = partialGradByCoeffs;
-        A.solveAdj(adjGrad);  // 求解伴随系统 A^T λ = ∂E/∂c
+        A.solveAdj(adjGrad); // 求解伴随系统 A^T λ = ∂E/∂c
 
         // 从伴随变量中提取路径点梯度
         for (int i = 0; i < N - 1; i++) {
@@ -469,8 +457,7 @@ class MINCO_S2NU {
             B1.row(0) = -6.0 * b.row(i * 4 + 3);
 
             // negative velocity（负速度）
-            B1.row(1) = -(b.row(i * 4 + 1) + 2.0 * T1(i) * b.row(i * 4 + 2) +
-                          3.0 * T2(i) * b.row(i * 4 + 3));
+            B1.row(1) = -(b.row(i * 4 + 1) + 2.0 * T1(i) * b.row(i * 4 + 2) + 3.0 * T2(i) * b.row(i * 4 + 3));
             B1.row(2) = B1.row(1);
 
             // negative acceleration（负加速度）
@@ -481,15 +468,14 @@ class MINCO_S2NU {
 
         // 最后一段的时间梯度
         // negative velocity（负速度）
-        B2.row(0) = -(b.row(4 * N - 3) + 2.0 * T1(N - 1) * b.row(4 * N - 2) +
-                      3.0 * T2(N - 1) * b.row(4 * N - 1));
+        B2.row(0) = -(b.row(4 * N - 3) + 2.0 * T1(N - 1) * b.row(4 * N - 2) + 3.0 * T2(N - 1) * b.row(4 * N - 1));
 
         // negative acceleration（负加速度）
         B2.row(1) = -(2.0 * b.row(4 * N - 2) + 6.0 * T1(N - 1) * b.row(4 * N - 1));
 
         gradByTimes(N - 1) = B2.cwiseProduct(adjGrad.block<2, 3>(4 * N - 2, 0)).sum();
 
-        gradByTimes += partialGradByTimes;  // 加上直接时间依赖的梯度
+        gradByTimes += partialGradByTimes; // 加上直接时间依赖的梯度
     }
 };
 
@@ -502,26 +488,24 @@ class MINCO_S2NU {
  * 边界条件：位置(P)、速度(V)和加速度(A)
  */
 class MINCO_S3NU {
-   public:
+  public:
     MINCO_S3NU() = default;
     // 析构函数：销毁带状矩阵系统
-    ~MINCO_S3NU() {
-        A.destroy();
-    }
+    ~MINCO_S3NU() { A.destroy(); }
 
-   private:
-    int N;                    // 轨迹段数
-    Eigen::Matrix3d headPVA;  // 起始状态：位置、速度、加速度（3×3矩阵）
-    Eigen::Matrix3d tailPVA;  // 终止状态：位置、速度、加速度（3×3矩阵）
-    BandedSystem A;           // 带状线性系统矩阵
-    Eigen::MatrixX3d b;       // 多项式系数矩阵（6N×3）
-    Eigen::VectorXd T1;       // 每段时间 t
-    Eigen::VectorXd T2;       // t²
-    Eigen::VectorXd T3;       // t³
-    Eigen::VectorXd T4;       // t⁴
-    Eigen::VectorXd T5;       // t⁵
+  private:
+    int N;                   // 轨迹段数
+    Eigen::Matrix3d headPVA; // 起始状态：位置、速度、加速度（3×3矩阵）
+    Eigen::Matrix3d tailPVA; // 终止状态：位置、速度、加速度（3×3矩阵）
+    BandedSystem A;          // 带状线性系统矩阵
+    Eigen::MatrixX3d b;      // 多项式系数矩阵（6N×3）
+    Eigen::VectorXd T1;      // 每段时间 t
+    Eigen::VectorXd T2;      // t²
+    Eigen::VectorXd T3;      // t³
+    Eigen::VectorXd T4;      // t⁴
+    Eigen::VectorXd T5;      // t⁵
 
-   public:
+  public:
     /**
      * @brief 设置边界条件
      * @param headState 起始状态 [位置, 速度, 加速度]（3×3矩阵）
@@ -530,13 +514,12 @@ class MINCO_S3NU {
      *
      * 五次多项式(s=3)有6个系数，N段轨迹共6N个系数需要求解。
      */
-    inline void setConditions(const Eigen::Matrix3d& headState, const Eigen::Matrix3d& tailState,
-                              const int& pieceNum) {
+    inline void setConditions(const Eigen::Matrix3d& headState, const Eigen::Matrix3d& tailState, const int& pieceNum) {
         N = pieceNum;
         headPVA = headState;
         tailPVA = tailState;
-        A.create(6 * N, 6, 6);  // 创建 6N×6N 的带状矩阵，带宽为6
-        b.resize(6 * N, 3);     // 系数矩阵：6个系数/段 × N段 × 3个维度
+        A.create(6 * N, 6, 6); // 创建 6N×6N 的带状矩阵，带宽为6
+        b.resize(6 * N, 3);    // 系数矩阵：6个系数/段 × N段 × 3个维度
         T1.resize(N);
         T2.resize(N);
         T3.resize(N);
@@ -554,21 +537,21 @@ class MINCO_S3NU {
      */
     inline void setParameters(const Eigen::Matrix3Xd& inPs, const Eigen::VectorXd& ts) {
         T1 = ts;
-        T2 = T1.cwiseProduct(T1);  // t²
-        T3 = T2.cwiseProduct(T1);  // t³
-        T4 = T2.cwiseProduct(T2);  // t⁴
-        T5 = T4.cwiseProduct(T1);  // t⁵
+        T2 = T1.cwiseProduct(T1); // t²
+        T3 = T2.cwiseProduct(T1); // t³
+        T4 = T2.cwiseProduct(T2); // t⁴
+        T5 = T4.cwiseProduct(T1); // t⁵
 
         A.reset();
         b.setZero();
 
         // 起始边界条件：位置、速度、加速度
-        A(0, 0) = 1.0;                          // p(0) = c0
-        A(1, 1) = 1.0;                          // v(0) = c1
-        A(2, 2) = 2.0;                          // a(0) = 2c2
-        b.row(0) = headPVA.col(0).transpose();  // 起始位置
-        b.row(1) = headPVA.col(1).transpose();  // 起始速度
-        b.row(2) = headPVA.col(2).transpose();  // 起始加速度
+        A(0, 0) = 1.0;                         // p(0) = c0
+        A(1, 1) = 1.0;                         // v(0) = c1
+        A(2, 2) = 2.0;                         // a(0) = 2c2
+        b.row(0) = headPVA.col(0).transpose(); // 起始位置
+        b.row(1) = headPVA.col(1).transpose(); // 起始速度
+        b.row(2) = headPVA.col(2).transpose(); // 起始加速度
 
         // 中间段约束：急动度连续性 + snap连续性 + 位置约束 + 速度、加速度连续性
         for (int i = 0; i < N - 1; i++) {
@@ -615,7 +598,7 @@ class MINCO_S3NU {
             A(6 * i + 8, 6 * i + 5) = 20 * T3(i);
             A(6 * i + 8, 6 * i + 8) = -2.0;
 
-            b.row(6 * i + 5) = inPs.col(i).transpose();  // 中间路径点
+            b.row(6 * i + 5) = inPs.col(i).transpose(); // 中间路径点
         }
 
         // 终止边界条件：位置、速度、加速度
@@ -635,13 +618,13 @@ class MINCO_S3NU {
         A(6 * N - 1, 6 * N - 2) = 12 * T2(N - 1);
         A(6 * N - 1, 6 * N - 1) = 20 * T3(N - 1);
 
-        b.row(6 * N - 3) = tailPVA.col(0).transpose();  // 终止位置
-        b.row(6 * N - 2) = tailPVA.col(1).transpose();  // 终止速度
-        b.row(6 * N - 1) = tailPVA.col(2).transpose();  // 终止加速度
+        b.row(6 * N - 3) = tailPVA.col(0).transpose(); // 终止位置
+        b.row(6 * N - 2) = tailPVA.col(1).transpose(); // 终止速度
+        b.row(6 * N - 1) = tailPVA.col(2).transpose(); // 终止加速度
 
         // 求解线性系统
-        A.factorizeLU();  // LU 分解
-        A.solve(b);       // 求解系数 b
+        A.factorizeLU(); // LU 分解
+        A.solve(b);      // 求解系数 b
 
         return;
     }
@@ -669,12 +652,11 @@ class MINCO_S3NU {
     inline void getEnergy(double& energy) const {
         energy = 0.0;
         for (int i = 0; i < N; i++) {
-            energy += 36.0 * b.row(6 * i + 3).squaredNorm() * T1(i) +
-                      144.0 * b.row(6 * i + 4).dot(b.row(6 * i + 3)) * T2(i) +
-                      192.0 * b.row(6 * i + 4).squaredNorm() * T3(i) +
-                      240.0 * b.row(6 * i + 5).dot(b.row(6 * i + 3)) * T3(i) +
-                      720.0 * b.row(6 * i + 5).dot(b.row(6 * i + 4)) * T4(i) +
-                      720.0 * b.row(6 * i + 5).squaredNorm() * T5(i);
+            energy +=
+                36.0 * b.row(6 * i + 3).squaredNorm() * T1(i) + 144.0 * b.row(6 * i + 4).dot(b.row(6 * i + 3)) * T2(i) +
+                192.0 * b.row(6 * i + 4).squaredNorm() * T3(i) +
+                240.0 * b.row(6 * i + 5).dot(b.row(6 * i + 3)) * T3(i) +
+                720.0 * b.row(6 * i + 5).dot(b.row(6 * i + 4)) * T4(i) + 720.0 * b.row(6 * i + 5).squaredNorm() * T5(i);
         }
         return;
     }
@@ -683,9 +665,7 @@ class MINCO_S3NU {
      * @brief 获取多项式系数
      * @return 系数矩阵（6N×3）
      */
-    inline const Eigen::MatrixX3d& getCoeffs(void) const {
-        return b;
-    }
+    inline const Eigen::MatrixX3d& getCoeffs(void) const { return b; }
 
     /**
      * @brief 计算能量对多项式系数的偏导数
@@ -697,17 +677,14 @@ class MINCO_S3NU {
         gdC.resize(6 * N, 3);
         for (int i = 0; i < N; i++) {
             // ∂E/∂c₅：五次项系数的梯度
-            gdC.row(6 * i + 5) = 240.0 * b.row(6 * i + 3) * T3(i) +
-                                 720.0 * b.row(6 * i + 4) * T4(i) +
-                                 1440.0 * b.row(6 * i + 5) * T5(i);
+            gdC.row(6 * i + 5) =
+                240.0 * b.row(6 * i + 3) * T3(i) + 720.0 * b.row(6 * i + 4) * T4(i) + 1440.0 * b.row(6 * i + 5) * T5(i);
             // ∂E/∂c₄：四次项系数的梯度
-            gdC.row(6 * i + 4) = 144.0 * b.row(6 * i + 3) * T2(i) +
-                                 384.0 * b.row(6 * i + 4) * T3(i) +
-                                 720.0 * b.row(6 * i + 5) * T4(i);
+            gdC.row(6 * i + 4) =
+                144.0 * b.row(6 * i + 3) * T2(i) + 384.0 * b.row(6 * i + 4) * T3(i) + 720.0 * b.row(6 * i + 5) * T4(i);
             // ∂E/∂c₃：三次项系数的梯度
-            gdC.row(6 * i + 3) = 72.0 * b.row(6 * i + 3) * T1(i) +
-                                 144.0 * b.row(6 * i + 4) * T2(i) +
-                                 240.0 * b.row(6 * i + 5) * T3(i);
+            gdC.row(6 * i + 3) =
+                72.0 * b.row(6 * i + 3) * T1(i) + 144.0 * b.row(6 * i + 4) * T2(i) + 240.0 * b.row(6 * i + 5) * T3(i);
             // c₀, c₁, c₂不影响急动度，梯度为零
             gdC.block<3, 3>(6 * i, 0).setZero();
         }
@@ -723,8 +700,7 @@ class MINCO_S3NU {
     inline void getEnergyPartialGradByTimes(Eigen::VectorXd& gdT) const {
         gdT.resize(N);
         for (int i = 0; i < N; i++) {
-            gdT(i) = 36.0 * b.row(6 * i + 3).squaredNorm() +
-                     288.0 * b.row(6 * i + 4).dot(b.row(6 * i + 3)) * T1(i) +
+            gdT(i) = 36.0 * b.row(6 * i + 3).squaredNorm() + 288.0 * b.row(6 * i + 4).dot(b.row(6 * i + 3)) * T1(i) +
                      576.0 * b.row(6 * i + 4).squaredNorm() * T2(i) +
                      720.0 * b.row(6 * i + 5).dot(b.row(6 * i + 3)) * T2(i) +
                      2880.0 * b.row(6 * i + 5).dot(b.row(6 * i + 4)) * T3(i) +
@@ -742,15 +718,14 @@ class MINCO_S3NU {
      *
      * 使用伴随方法计算梯度，将系数梯度传播到路径点和时间。
      */
-    inline void propogateGrad(const Eigen::MatrixX3d& partialGradByCoeffs,
-                              const Eigen::VectorXd& partialGradByTimes,
+    inline void propogateGrad(const Eigen::MatrixX3d& partialGradByCoeffs, const Eigen::VectorXd& partialGradByTimes,
                               Eigen::Matrix3Xd& gradByPoints, Eigen::VectorXd& gradByTimes)
 
     {
         gradByPoints.resize(3, N - 1);
         gradByTimes.resize(N);
         Eigen::MatrixX3d adjGrad = partialGradByCoeffs;
-        A.solveAdj(adjGrad);  // 求解伴随系统 A^T λ = ∂E/∂c
+        A.solveAdj(adjGrad); // 求解伴随系统 A^T λ = ∂E/∂c
 
         // 从伴随变量中提取路径点梯度
         for (int i = 0; i < N - 1; i++) {
@@ -762,18 +737,16 @@ class MINCO_S3NU {
         // 计算时间梯度（隐式依赖）
         for (int i = 0; i < N - 1; i++) {
             // negative velocity（负速度）
-            B1.row(2) = -(b.row(i * 6 + 1) + 2.0 * T1(i) * b.row(i * 6 + 2) +
-                          3.0 * T2(i) * b.row(i * 6 + 3) + 4.0 * T3(i) * b.row(i * 6 + 4) +
-                          5.0 * T4(i) * b.row(i * 6 + 5));
+            B1.row(2) = -(b.row(i * 6 + 1) + 2.0 * T1(i) * b.row(i * 6 + 2) + 3.0 * T2(i) * b.row(i * 6 + 3) +
+                          4.0 * T3(i) * b.row(i * 6 + 4) + 5.0 * T4(i) * b.row(i * 6 + 5));
             B1.row(3) = B1.row(2);
 
             // negative acceleration（负加速度）
-            B1.row(4) = -(2.0 * b.row(i * 6 + 2) + 6.0 * T1(i) * b.row(i * 6 + 3) +
-                          12.0 * T2(i) * b.row(i * 6 + 4) + 20.0 * T3(i) * b.row(i * 6 + 5));
+            B1.row(4) = -(2.0 * b.row(i * 6 + 2) + 6.0 * T1(i) * b.row(i * 6 + 3) + 12.0 * T2(i) * b.row(i * 6 + 4) +
+                          20.0 * T3(i) * b.row(i * 6 + 5));
 
             // negative jerk（负急动度）
-            B1.row(5) = -(6.0 * b.row(i * 6 + 3) + 24.0 * T1(i) * b.row(i * 6 + 4) +
-                          60.0 * T2(i) * b.row(i * 6 + 5));
+            B1.row(5) = -(6.0 * b.row(i * 6 + 3) + 24.0 * T1(i) * b.row(i * 6 + 4) + 60.0 * T2(i) * b.row(i * 6 + 5));
 
             // negative snap（负snap）
             B1.row(0) = -(24.0 * b.row(i * 6 + 4) + 120.0 * T1(i) * b.row(i * 6 + 5));
@@ -786,25 +759,24 @@ class MINCO_S3NU {
 
         // 最后一段的时间梯度
         // negative velocity（负速度）
-        B2.row(0) = -(b.row(6 * N - 5) + 2.0 * T1(N - 1) * b.row(6 * N - 4) +
-                      3.0 * T2(N - 1) * b.row(6 * N - 3) + 4.0 * T3(N - 1) * b.row(6 * N - 2) +
-                      5.0 * T4(N - 1) * b.row(6 * N - 1));
+        B2.row(0) = -(b.row(6 * N - 5) + 2.0 * T1(N - 1) * b.row(6 * N - 4) + 3.0 * T2(N - 1) * b.row(6 * N - 3) +
+                      4.0 * T3(N - 1) * b.row(6 * N - 2) + 5.0 * T4(N - 1) * b.row(6 * N - 1));
 
         // negative acceleration（负加速度）
         B2.row(1) = -(2.0 * b.row(6 * N - 4) + 6.0 * T1(N - 1) * b.row(6 * N - 3) +
                       12.0 * T2(N - 1) * b.row(6 * N - 2) + 20.0 * T3(N - 1) * b.row(6 * N - 1));
 
         // negative jerk（负急动度）
-        B2.row(2) = -(6.0 * b.row(6 * N - 3) + 24.0 * T1(N - 1) * b.row(6 * N - 2) +
-                      60.0 * T2(N - 1) * b.row(6 * N - 1));
+        B2.row(2) =
+            -(6.0 * b.row(6 * N - 3) + 24.0 * T1(N - 1) * b.row(6 * N - 2) + 60.0 * T2(N - 1) * b.row(6 * N - 1));
 
         gradByTimes(N - 1) = B2.cwiseProduct(adjGrad.block<3, 3>(6 * N - 3, 0)).sum();
 
-        gradByTimes += partialGradByTimes;  // 加上直接时间依赖的梯度
+        gradByTimes += partialGradByTimes; // 加上直接时间依赖的梯度
     }
 };
 
-}  // namespace xgc2_math::optimization::minco
+} // namespace xgc2_math::optimization::minco
 
 #endif
 // NOLINTEND

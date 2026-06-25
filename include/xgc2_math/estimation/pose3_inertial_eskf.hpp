@@ -140,7 +140,8 @@ inline void normalize(Pose3InertialEskfConfig& config) {
     config.initial_orientation_variance =
         pose3_inertial_eskf_detail::positiveOr(config.initial_orientation_variance, 0.01);
     config.initial_gyro_bias_variance = pose3_inertial_eskf_detail::positiveOr(config.initial_gyro_bias_variance, 0.01);
-    config.initial_accel_bias_variance = pose3_inertial_eskf_detail::positiveOr(config.initial_accel_bias_variance, 0.1);
+    config.initial_accel_bias_variance =
+        pose3_inertial_eskf_detail::positiveOr(config.initial_accel_bias_variance, 0.1);
     config.initial_extrinsic_position_variance =
         config.estimate_extrinsic
             ? pose3_inertial_eskf_detail::positiveOr(config.initial_extrinsic_position_variance, 1.0e-4)
@@ -205,7 +206,7 @@ class Pose3InertialEskf {
         state_.last_pose_stamp_sec = pose.stamp_sec;
         state_.last_inertial_stamp_sec =
             inertial != nullptr && pose3_inertial_eskf_detail::validInertialSample(*inertial) ? inertial->stamp_sec
-                                                                                             : pose.stamp_sec;
+                                                                                              : pose.stamp_sec;
         if (inertial != nullptr && pose3_inertial_eskf_detail::validInertialSample(*inertial)) {
             state_.angular_velocity = inertial->angular_velocity - state_.gyro_bias;
         }

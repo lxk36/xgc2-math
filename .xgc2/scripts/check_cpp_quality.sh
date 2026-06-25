@@ -36,6 +36,7 @@ cppcheck \
   --error-exitcode=1 \
   --std=c++17 \
   --inline-suppr \
+  --suppressions-list=.xgc2/cppcheck_suppressions.txt \
   -I include \
   include test
 

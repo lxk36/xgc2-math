@@ -34,11 +34,9 @@ struct TrajectoryValidationResult {
     uint32_t flags{kFlagNone};
 
     bool ok() const {
-        return (flags & (kFlagInvalidInput | kFlagTimeDomain | kFlagNonFinite |
-                         kFlagLowThrust | kFlagYawSingularity |
+        return (flags & (kFlagInvalidInput | kFlagTimeDomain | kFlagNonFinite | kFlagLowThrust | kFlagYawSingularity |
                          kFlagOptimizationFailure | kFlagLowSpeedSingularity)) == 0U;
     }
 };
 
-}  // namespace xgc2_math::trajectory
-
+} // namespace xgc2_math::trajectory

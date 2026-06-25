@@ -18,8 +18,8 @@ struct CircleCurveParameters2 {
 };
 
 class CircleCurveEvaluator2 final : public TrajectoryEvaluator2 {
-   public:
-    explicit CircleCurveEvaluator2(CircleCurveParameters2 params = {}) : params_(params) {
+  public:
+    explicit CircleCurveEvaluator2(const CircleCurveParameters2& params = {}) : params_(params) {
         params_.radius = analytic_detail::safeRadius(params_.radius);
         params_.line_speed = std::max(0.0, params_.line_speed);
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
@@ -54,20 +54,12 @@ class CircleCurveEvaluator2 final : public TrajectoryEvaluator2 {
         completePlanarReference2(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags;
-    }
-    const CircleCurveParameters2& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags; }
+    const CircleCurveParameters2& params() const { return params_; }
 
-   private:
+  private:
     CircleCurveParameters2 params_;
 };
 
@@ -83,8 +75,8 @@ struct CircleCurveParameters3 {
 };
 
 class CircleCurveEvaluator3 final : public TrajectoryEvaluator3 {
-   public:
-    explicit CircleCurveEvaluator3(CircleCurveParameters3 params = {}) : params_(params) {
+  public:
+    explicit CircleCurveEvaluator3(const CircleCurveParameters3& params = {}) : params_(params) {
         params_.radius = analytic_detail::safeRadius(params_.radius);
         params_.line_speed = std::max(0.0, params_.line_speed);
         if (!analytic_detail::finiteScalar(params_.duration) || params_.duration <= 0.0) {
@@ -132,21 +124,13 @@ class CircleCurveEvaluator3 final : public TrajectoryEvaluator3 {
         analytic_detail::fillYawFromVelocity(output);
     }
 
-    double duration() const override {
-        return params_.duration;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kAnalytic;
-    }
-    uint32_t flags() const override {
-        return params_.flags;
-    }
-    const CircleCurveParameters3& params() const {
-        return params_;
-    }
+    double duration() const override { return params_.duration; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kAnalytic; }
+    uint32_t flags() const override { return params_.flags; }
+    const CircleCurveParameters3& params() const { return params_; }
 
-   private:
+  private:
     CircleCurveParameters3 params_;
 };
 
-}  // namespace xgc2_math::trajectory
+} // namespace xgc2_math::trajectory

@@ -6,8 +6,8 @@
 #include <cmath>
 #include <limits>
 
-#include "xgc2_math/utils/status.hpp"
 #include "xgc2_math/filter/butterworth_filter.hpp"
+#include "xgc2_math/utils/status.hpp"
 
 namespace xgc2_math {
 

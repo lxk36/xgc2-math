@@ -203,8 +203,7 @@ typedef double (*lbfgs_evaluate_t)(void* instance, const Eigen::VectorXd& x, Eig
  * @param  d           步长向量，可以是下降方向
  * @retval double      当前线搜索中步长的上界，使得(stpbound * d)是最大合理步长
  */
-typedef double (*lbfgs_stepbound_t)(void* instance, const Eigen::VectorXd& xp,
-                                    const Eigen::VectorXd& d);
+typedef double (*lbfgs_stepbound_t)(void* instance, const Eigen::VectorXd& xp, const Eigen::VectorXd& d);
 
 /**
  * 监控最小化过程进度的回调接口
@@ -222,18 +221,18 @@ typedef double (*lbfgs_stepbound_t)(void* instance, const Eigen::VectorXd& xp,
  * @param  ls          此次迭代调用的评估次数
  * @retval int         返回0继续最小化过程，返回非零值将取消最小化过程
  */
-typedef int (*lbfgs_progress_t)(void* instance, const Eigen::VectorXd& x, const Eigen::VectorXd& g,
-                                const double fx, const double step, const int k, const int ls);
+typedef int (*lbfgs_progress_t)(void* instance, const Eigen::VectorXd& x, const Eigen::VectorXd& g, const double fx,
+                                const double step, const int k, const int ls);
 
 /**
  * 回调数据结构体
  * 用于封装所有回调函数指针和用户数据
  */
 struct callback_data_t {
-    void* instance = nullptr;                    // 用户数据指针
-    lbfgs_evaluate_t proc_evaluate = nullptr;    // 目标函数和梯度评估回调
-    lbfgs_stepbound_t proc_stepbound = nullptr;  // 步长上界回调
-    lbfgs_progress_t proc_progress = nullptr;    // 进度监控回调
+    void* instance = nullptr;                   // 用户数据指针
+    lbfgs_evaluate_t proc_evaluate = nullptr;   // 目标函数和梯度评估回调
+    lbfgs_stepbound_t proc_stepbound = nullptr; // 步长上界回调
+    lbfgs_progress_t proc_progress = nullptr;   // 进度监控回调
 };
 
 // ----------------------- L-BFGS算法实现部分 -----------------------
@@ -262,9 +261,8 @@ struct callback_data_t {
  * @retval int      成功返回评估次数，失败返回负值错误码
  */
 inline int line_search_lewisoverton(Eigen::VectorXd& x, double& f, Eigen::VectorXd& g, double& stp,
-                                    const Eigen::VectorXd& s, const Eigen::VectorXd& xp,
-                                    const Eigen::VectorXd& gp, const double stpmin,
-                                    const double stpmax, const callback_data_t& cd,
+                                    const Eigen::VectorXd& s, const Eigen::VectorXd& xp, const Eigen::VectorXd& gp,
+                                    const double stpmin, const double stpmax, const callback_data_t& cd,
                                     const lbfgs_parameter_t& param) {
     // 评估次数计数器
     int count = 0;
@@ -403,8 +401,8 @@ inline int line_search_lewisoverton(Eigen::VectorXd& x, double& f, Eigen::Vector
  *                         此函数返回非负整数。负整数表示错误
  */
 inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_evaluate,
-                          lbfgs_stepbound_t proc_stepbound, lbfgs_progress_t proc_progress,
-                          void* instance, const lbfgs_parameter_t& param) {
+                          lbfgs_stepbound_t proc_stepbound, lbfgs_progress_t proc_progress, void* instance,
+                          const lbfgs_parameter_t& param) {
     // ret: 返回状态码
     // i, j: 循环索引
     // k: 迭代次数
@@ -426,7 +424,7 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
     double gnorm_inf, xnorm_inf, beta, rate, cau;
 
     // n: 决策变量的维度
-    const int n = x.size();
+    const int n = static_cast<int>(x.size());
     // m: 有限内存的大小（修正数量）
     const int m = param.mem_size;
 
@@ -466,17 +464,17 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
     }
 
     /* 准备中间变量 */
-    Eigen::VectorXd xp(n);                        // 上一次迭代的变量值
-    Eigen::VectorXd g(n);                         // 当前梯度
-    Eigen::VectorXd gp(n);                        // 上一次迭代的梯度
-    Eigen::VectorXd d(n);                         // 搜索方向
-    Eigen::VectorXd pf(std::max(1, param.past));  // 历史目标函数值（用于delta测试）
+    Eigen::VectorXd xp(n);                       // 上一次迭代的变量值
+    Eigen::VectorXd g(n);                        // 当前梯度
+    Eigen::VectorXd gp(n);                       // 上一次迭代的梯度
+    Eigen::VectorXd d(n);                        // 搜索方向
+    Eigen::VectorXd pf(std::max(1, param.past)); // 历史目标函数值（用于delta测试）
 
     /* 初始化有限内存 */
-    Eigen::VectorXd lm_alpha = Eigen::VectorXd::Zero(m);  // L-BFGS递推公式中的alpha值
-    Eigen::MatrixXd lm_s = Eigen::MatrixXd::Zero(n, m);   // 变量差：s_k = x_{k+1} - x_k
-    Eigen::MatrixXd lm_y = Eigen::MatrixXd::Zero(n, m);   // 梯度差：y_k = g_{k+1} - g_k
-    Eigen::VectorXd lm_ys = Eigen::VectorXd::Zero(m);  // y^T·s的值（用于逆Hessian近似）
+    Eigen::VectorXd lm_alpha = Eigen::VectorXd::Zero(m); // L-BFGS递推公式中的alpha值
+    Eigen::MatrixXd lm_s = Eigen::MatrixXd::Zero(n, m);  // 变量差：s_k = x_{k+1} - x_k
+    Eigen::MatrixXd lm_y = Eigen::MatrixXd::Zero(n, m);  // 梯度差：y_k = g_{k+1} - g_k
+    Eigen::VectorXd lm_ys = Eigen::VectorXd::Zero(m);    // y^T·s的值（用于逆Hessian近似）
 
     /* 构造回调数据 */
     callback_data_t cd;
@@ -500,8 +498,8 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
     /*
     确保初始变量不是驻点（梯度不为零）
     */
-    gnorm_inf = g.cwiseAbs().maxCoeff();  // 计算梯度的无穷范数
-    xnorm_inf = x.cwiseAbs().maxCoeff();  // 计算变量的无穷范数
+    gnorm_inf = g.cwiseAbs().maxCoeff(); // 计算梯度的无穷范数
+    xnorm_inf = x.cwiseAbs().maxCoeff(); // 计算变量的无穷范数
 
     if (gnorm_inf / std::max(1.0, xnorm_inf) < param.g_epsilon) {
         /* 初始猜测已经是驻点 */
@@ -513,9 +511,9 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
         */
         step = 1.0 / d.norm();
 
-        k = 1;      // 迭代计数器
-        end = 0;    // 有限内存循环缓冲区的当前位置
-        bound = 0;  // 当前存储的修正数量
+        k = 1;     // 迭代计数器
+        end = 0;   // 有限内存循环缓冲区的当前位置
+        bound = 0; // 当前存储的修正数量
 
         while (true) {
             /* 保存当前位置和梯度向量 */
@@ -560,8 +558,8 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
             ||g(x)||_inf / max(1, ||x||_inf) < g_epsilon
             即：归一化的梯度无穷范数小于阈值
             */
-            gnorm_inf = g.cwiseAbs().maxCoeff();  // 计算梯度的无穷范数
-            xnorm_inf = x.cwiseAbs().maxCoeff();  // 计算变量的无穷范数
+            gnorm_inf = g.cwiseAbs().maxCoeff(); // 计算梯度的无穷范数
+            xnorm_inf = x.cwiseAbs().maxCoeff(); // 计算变量的无穷范数
             if (gnorm_inf / std::max(1.0, xnorm_inf) < param.g_epsilon) {
                 /* 达到收敛条件 */
                 ret = LBFGS_CONVERGENCE;
@@ -607,8 +605,8 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
             y_{k+1} = g_{k+1} - g_{k}  （梯度的变化量）
             这两个向量用于构造逆Hessian矩阵的近似
             */
-            lm_s.col(end) = x - xp;  // 变量差
-            lm_y.col(end) = g - gp;  // 梯度差
+            lm_s.col(end) = x - xp; // 变量差
+            lm_y.col(end) = g - gp; // 梯度差
 
             /*
             计算标量ys和yy：
@@ -616,9 +614,9 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
             yy = y^T · y （梯度差的平方范数）
             注意：yy用于缩放Hessian矩阵H_0（Cholesky因子）
             */
-            ys = lm_y.col(end).dot(lm_s.col(end));  // 计算y^T·s
-            yy = lm_y.col(end).squaredNorm();       // 计算y^T·y
-            lm_ys(end) = ys;                        // 存储ys值
+            ys = lm_y.col(end).dot(lm_s.col(end)); // 计算y^T·s
+            yy = lm_y.col(end).squaredNorm();      // 计算y^T·y
+            lm_ys(end) = ys;                       // 存储ys值
 
             /* 计算负梯度（初始搜索方向） */
             d = -g;
@@ -651,13 +649,13 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
                 第二个循环：从最旧到最新的修正，计算β值并更新r
                 */
                 ++bound;
-                bound = m < bound ? m : bound;  // 修正数量不超过m
-                end = (end + 1) % m;            // 更新循环缓冲区索引
+                bound = m < bound ? m : bound; // 修正数量不超过m
+                end = (end + 1) % m;           // 更新循环缓冲区索引
 
                 // 第一个循环：向后遍历，计算α并更新方向
                 j = end;
                 for (i = 0; i < bound; ++i) {
-                    j = (j + m - 1) % m;  // 向前移动索引（循环）
+                    j = (j + m - 1) % m; // 向前移动索引（循环）
                     /* 计算α_j = ρ_j * s_j^T · q_{k+1} */
                     lm_alpha(j) = lm_s.col(j).dot(d) / lm_ys(j);
                     /* 更新q_i = q_{i+1} - α_i * y_i */
@@ -673,7 +671,7 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
                     beta = lm_y.col(j).dot(d) / lm_ys(j);
                     /* 更新γ_{i+1} = γ_i + (α_j - β_j) * s_j */
                     d += (lm_alpha(j) - beta) * lm_s.col(j);
-                    j = (j + 1) % m;  // 向后移动索引（循环）
+                    j = (j + 1) % m; // 向后移动索引（循环）
                 }
             }
 
@@ -697,106 +695,106 @@ inline int lbfgs_optimize(Eigen::VectorXd& x, double& f, lbfgs_evaluate_t proc_e
 inline const char* lbfgs_strerror(const int err) {
     // 根据错误码返回相应的描述信息
     switch (err) {
-        case LBFGS_CONVERGENCE:
-            // 成功：达到收敛（梯度满足g_epsilon阈值）
-            return "Success: reached convergence (g_epsilon).";
+    case LBFGS_CONVERGENCE:
+        // 成功：达到收敛（梯度满足g_epsilon阈值）
+        return "Success: reached convergence (g_epsilon).";
 
-        case LBFGS_STOP:
-            // 成功：满足停止准则（历史函数值下降小于delta）
-            return "Success: met stopping criteria (past f decrease less than delta).";
+    case LBFGS_STOP:
+        // 成功：满足停止准则（历史函数值下降小于delta）
+        return "Success: met stopping criteria (past f decrease less than delta).";
 
-        case LBFGS_CANCELED:
-            // 迭代被监控回调函数取消
-            return "The iteration has been canceled by the monitor callback.";
+    case LBFGS_CANCELED:
+        // 迭代被监控回调函数取消
+        return "The iteration has been canceled by the monitor callback.";
 
-        case LBFGSERR_UNKNOWNERROR:
-            // 未知错误
-            return "Unknown error.";
+    case LBFGSERR_UNKNOWNERROR:
+        // 未知错误
+        return "Unknown error.";
 
-        case LBFGSERR_INVALID_N:
-            // 无效的变量数量
-            return "Invalid number of variables specified.";
+    case LBFGSERR_INVALID_N:
+        // 无效的变量数量
+        return "Invalid number of variables specified.";
 
-        case LBFGSERR_INVALID_MEMSIZE:
-            // 无效的内存大小参数
-            return "Invalid parameter lbfgs_parameter_t::mem_size specified.";
+    case LBFGSERR_INVALID_MEMSIZE:
+        // 无效的内存大小参数
+        return "Invalid parameter lbfgs_parameter_t::mem_size specified.";
 
-        case LBFGSERR_INVALID_GEPSILON:
-            // 无效的梯度epsilon参数
-            return "Invalid parameter lbfgs_parameter_t::g_epsilon specified.";
+    case LBFGSERR_INVALID_GEPSILON:
+        // 无效的梯度epsilon参数
+        return "Invalid parameter lbfgs_parameter_t::g_epsilon specified.";
 
-        case LBFGSERR_INVALID_TESTPERIOD:
-            // 无效的past参数
-            return "Invalid parameter lbfgs_parameter_t::past specified.";
+    case LBFGSERR_INVALID_TESTPERIOD:
+        // 无效的past参数
+        return "Invalid parameter lbfgs_parameter_t::past specified.";
 
-        case LBFGSERR_INVALID_DELTA:
-            // 无效的delta参数
-            return "Invalid parameter lbfgs_parameter_t::delta specified.";
+    case LBFGSERR_INVALID_DELTA:
+        // 无效的delta参数
+        return "Invalid parameter lbfgs_parameter_t::delta specified.";
 
-        case LBFGSERR_INVALID_MINSTEP:
-            // 无效的最小步长参数
-            return "Invalid parameter lbfgs_parameter_t::min_step specified.";
+    case LBFGSERR_INVALID_MINSTEP:
+        // 无效的最小步长参数
+        return "Invalid parameter lbfgs_parameter_t::min_step specified.";
 
-        case LBFGSERR_INVALID_MAXSTEP:
-            // 无效的最大步长参数
-            return "Invalid parameter lbfgs_parameter_t::max_step specified.";
+    case LBFGSERR_INVALID_MAXSTEP:
+        // 无效的最大步长参数
+        return "Invalid parameter lbfgs_parameter_t::max_step specified.";
 
-        case LBFGSERR_INVALID_FDECCOEFF:
-            // 无效的函数下降系数参数
-            return "Invalid parameter lbfgs_parameter_t::f_dec_coeff specified.";
+    case LBFGSERR_INVALID_FDECCOEFF:
+        // 无效的函数下降系数参数
+        return "Invalid parameter lbfgs_parameter_t::f_dec_coeff specified.";
 
-        case LBFGSERR_INVALID_SCURVCOEFF:
-            // 无效的曲率系数参数
-            return "Invalid parameter lbfgs_parameter_t::s_curv_coeff specified.";
+    case LBFGSERR_INVALID_SCURVCOEFF:
+        // 无效的曲率系数参数
+        return "Invalid parameter lbfgs_parameter_t::s_curv_coeff specified.";
 
-        case LBFGSERR_INVALID_MACHINEPREC:
-            // 无效的机器精度参数
-            return "Invalid parameter lbfgs_parameter_t::machine_prec specified.";
+    case LBFGSERR_INVALID_MACHINEPREC:
+        // 无效的机器精度参数
+        return "Invalid parameter lbfgs_parameter_t::machine_prec specified.";
 
-        case LBFGSERR_INVALID_MAXLINESEARCH:
-            // 无效的最大线搜索次数参数
-            return "Invalid parameter lbfgs_parameter_t::max_linesearch specified.";
+    case LBFGSERR_INVALID_MAXLINESEARCH:
+        // 无效的最大线搜索次数参数
+        return "Invalid parameter lbfgs_parameter_t::max_linesearch specified.";
 
-        case LBFGSERR_INVALID_FUNCVAL:
-            // 函数值变为NaN或Inf
-            return "The function value became NaN or Inf.";
+    case LBFGSERR_INVALID_FUNCVAL:
+        // 函数值变为NaN或Inf
+        return "The function value became NaN or Inf.";
 
-        case LBFGSERR_MINIMUMSTEP:
-            // 线搜索步长小于最小值
-            return "The line-search step became smaller than lbfgs_parameter_t::min_step.";
+    case LBFGSERR_MINIMUMSTEP:
+        // 线搜索步长小于最小值
+        return "The line-search step became smaller than lbfgs_parameter_t::min_step.";
 
-        case LBFGSERR_MAXIMUMSTEP:
-            // 线搜索步长大于最大值
-            return "The line-search step became larger than lbfgs_parameter_t::max_step.";
+    case LBFGSERR_MAXIMUMSTEP:
+        // 线搜索步长大于最大值
+        return "The line-search step became larger than lbfgs_parameter_t::max_step.";
 
-        case LBFGSERR_MAXIMUMLINESEARCH:
-            // 线搜索达到最大次数，假设不满足或精度无法达到
-            return "Line search reaches the maximum try number, assumptions not satisfied or "
-                   "precision not achievable.";
+    case LBFGSERR_MAXIMUMLINESEARCH:
+        // 线搜索达到最大次数，假设不满足或精度无法达到
+        return "Line search reaches the maximum try number, assumptions not satisfied or "
+               "precision not achievable.";
 
-        case LBFGSERR_MAXIMUMITERATION:
-            // 算法达到最大迭代次数
-            return "The algorithm routine reaches the maximum number of iterations.";
+    case LBFGSERR_MAXIMUMITERATION:
+        // 算法达到最大迭代次数
+        return "The algorithm routine reaches the maximum number of iterations.";
 
-        case LBFGSERR_WIDTHTOOSMALL:
-            // 相对搜索区间宽度小于机器精度
-            return "Relative search interval width is at least lbfgs_parameter_t::machine_prec.";
+    case LBFGSERR_WIDTHTOOSMALL:
+        // 相对搜索区间宽度小于机器精度
+        return "Relative search interval width is at least lbfgs_parameter_t::machine_prec.";
 
-        case LBFGSERR_INVALIDPARAMETERS:
-            // 发生逻辑错误（负的线搜索步长）
-            return "A logic error (negative line-search step) occurred.";
+    case LBFGSERR_INVALIDPARAMETERS:
+        // 发生逻辑错误（负的线搜索步长）
+        return "A logic error (negative line-search step) occurred.";
 
-        case LBFGSERR_INCREASEGRADIENT:
-            // 当前搜索方向增加了代价函数值
-            return "The current search direction increases the cost function value.";
+    case LBFGSERR_INCREASEGRADIENT:
+        // 当前搜索方向增加了代价函数值
+        return "The current search direction increases the cost function value.";
 
-        default:
-            // 未知的错误码
-            return "(unknown)";
+    default:
+        // 未知的错误码
+        return "(unknown)";
     }
 }
 
-}  // namespace xgc2_math::optimization::lbfgs
+} // namespace xgc2_math::optimization::lbfgs
 
 #endif
 // NOLINTEND

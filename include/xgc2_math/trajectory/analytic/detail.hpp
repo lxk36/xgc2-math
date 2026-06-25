@@ -43,8 +43,8 @@ inline double polyValue(const std::vector<double>& coeffs, double t, int derivat
     return value;
 }
 
-inline std::vector<double> septicBoundary(double p0, double v0, double a0, double j0, double p1,
-                                          double v1, double a1, double j1, double duration) {
+inline std::vector<double> septicBoundary(double p0, double v0, double a0, double j0, double p1, double v1, double a1,
+                                          double j1, double duration) {
     const double T = std::max(kMinDuration, duration);
     std::vector<double> c(8U, 0.0);
     c[0] = p0;
@@ -60,21 +60,24 @@ inline std::vector<double> septicBoundary(double p0, double v0, double a0, doubl
     const double T5 = T4 * T;
     const double T6 = T5 * T;
     const double T7 = T6 * T;
-    A << T4, T5, T6, T7, 4.0 * T3, 5.0 * T4, 6.0 * T5, 7.0 * T6, 12.0 * T2, 20.0 * T3,
-        30.0 * T4, 42.0 * T5, 24.0 * T, 60.0 * T2, 120.0 * T3, 210.0 * T4;
-    b << p1 - (c[0] + c[1] * T + c[2] * T2 + c[3] * T3),
-        v1 - (c[1] + 2.0 * c[2] * T + 3.0 * c[3] * T2), a1 - (2.0 * c[2] + 6.0 * c[3] * T),
-        j1 - (6.0 * c[3]);
+    A << T4, T5, T6, T7, 4.0 * T3, 5.0 * T4, 6.0 * T5, 7.0 * T6, 12.0 * T2, 20.0 * T3, 30.0 * T4, 42.0 * T5, 24.0 * T,
+        60.0 * T2, 120.0 * T3, 210.0 * T4;
+    b << p1 - (c[0] + c[1] * T + c[2] * T2 + c[3] * T3), v1 - (c[1] + 2.0 * c[2] * T + 3.0 * c[3] * T2),
+        a1 - (2.0 * c[2] + 6.0 * c[3] * T), j1 - (6.0 * c[3]);
 
-    const Eigen::Vector4d tail = A.colPivHouseholderQr().solve(b);
+    const Eigen::FullPivLU<Eigen::Matrix4d> solver(A);
+    Eigen::Vector4d tail = Eigen::Vector4d::Zero();
+    if (solver.isInvertible()) {
+        tail = solver.solve(b);
+    }
     for (int i = 0; i < 4; ++i) {
         c[static_cast<size_t>(i) + 4U] = tail(i);
     }
     return c;
 }
 
-inline void evalSeptic(const std::vector<double>& coeffs, double t, double& p, double& v, double& a,
-                       double& j, double& s) {
+inline void evalSeptic(const std::vector<double>& coeffs, double t, double& p, double& v, double& a, double& j,
+                       double& s) {
     p = polyValue(coeffs, t, 0);
     v = polyValue(coeffs, t, 1);
     a = polyValue(coeffs, t, 2);
@@ -105,4 +108,4 @@ inline void fillYawFromVelocity(FlatOutput3& output) {
     output.yaw_accel = (numerator_dot * speed_sq - numerator * denominator_dot) / (speed_sq * speed_sq);
 }
 
-}  // namespace xgc2_math::trajectory::analytic_detail
+} // namespace xgc2_math::trajectory::analytic_detail

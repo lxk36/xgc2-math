@@ -76,7 +76,9 @@ void testStatusHelpers() {
 
     const auto* invalid_dt = xgc2_math::statusDescriptor(xgc2_math::TimeDeltaStatus::kHeldInvalidDt);
     expect(invalid_dt != nullptr);
-    expect(std::string(invalid_dt->name) == "held_invalid_dt");
+    if (invalid_dt != nullptr) {
+        expect(std::string(invalid_dt->name) == "held_invalid_dt");
+    }
 
     const auto& test_statuses = xgc2_math::registeredStatuses<TestPipelineStatus>();
     expect(test_statuses.size() == 2);
@@ -576,8 +578,7 @@ void testTrajectoryAndNmpcProblemContracts() {
     const auto se3_u = xgc2_math::control::packControl(se3_control);
     expect(se3_x.size() == 13);
     expect(std::fabs(se3_u(0) - 9.8) < 1.0e-12);
-    expect(std::fabs(xgc2_math::control::unpackControl(se3_u).angular_acceleration.z() - 0.3) <
-           1.0e-12);
+    expect(std::fabs(xgc2_math::control::unpackControl(se3_u).angular_acceleration.z() - 0.3) < 1.0e-12);
 
     xgc2_math::control::Se2State se2_state;
     se2_state.position = Eigen::Vector2d(1.0, 2.0);
@@ -589,8 +590,7 @@ void testTrajectoryAndNmpcProblemContracts() {
     const auto se2_x = xgc2_math::control::packState(se2_state);
     const auto se2_u = xgc2_math::control::packControl(se2_control);
     expect(se2_x.size() == 4);
-    expect(std::fabs(xgc2_math::control::unpackState(se2_x).yaw - xgc2_math::normalizeAngle(4.0)) <
-           1.0e-12);
+    expect(std::fabs(xgc2_math::control::unpackState(se2_x).yaw - xgc2_math::normalizeAngle(4.0)) < 1.0e-12);
     expect(std::fabs(se2_u(0) - 0.4) < 1.0e-12);
     expect(std::fabs(se2_u(1) - 0.7) < 1.0e-12);
 }

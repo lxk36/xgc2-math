@@ -5,8 +5,8 @@
 #include <Eigen/Dense>
 #include <cstdint>
 #include <memory>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace xgc2_math::trajectory {
 
@@ -45,7 +45,7 @@ struct WaypointConstraint2 {
 };
 
 class TrajectoryEvaluator2 {
-   public:
+  public:
     virtual ~TrajectoryEvaluator2() = default;
     virtual bool evaluate(double t, PlanarReference2& output) const = 0;
     virtual double duration() const = 0;
@@ -61,26 +61,16 @@ struct PolynomialSegment2 {
 };
 
 class PiecewisePolynomialEvaluator2 final : public TrajectoryEvaluator2 {
-   public:
+  public:
     bool setSegments(std::vector<PolynomialSegment2> segments, uint8_t order);
     bool evaluate(double t, PlanarReference2& output) const override;
-    double duration() const override {
-        return total_duration_;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kPolynomial;
-    }
-    uint32_t flags() const override {
-        return flags_;
-    }
-    uint8_t order() const {
-        return order_;
-    }
-    const std::vector<PolynomialSegment2>& segments() const {
-        return segments_;
-    }
+    double duration() const override { return total_duration_; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kPolynomial; }
+    uint32_t flags() const override { return flags_; }
+    uint8_t order() const { return order_; }
+    const std::vector<PolynomialSegment2>& segments() const { return segments_; }
 
-   private:
+  private:
     std::vector<PolynomialSegment2> segments_;
     double total_duration_{0.0};
     uint8_t order_{0U};
@@ -106,7 +96,7 @@ struct WaypointProblem2 {
 };
 
 class MincoWaypointSolver2 final {
-   public:
+  public:
     bool solve(const WaypointProblem2& problem, PiecewisePolynomialEvaluator2& evaluator,
                uint32_t* flags = nullptr) const;
 };
@@ -117,40 +107,30 @@ struct SampledPoint2 {
 };
 
 class SampledEvaluator2 final : public TrajectoryEvaluator2 {
-   public:
+  public:
     bool setSamples(std::vector<SampledPoint2> samples);
     bool evaluate(double t, PlanarReference2& output) const override;
-    double duration() const override {
-        return duration_;
-    }
-    TrajectoryModelType type() const override {
-        return TrajectoryModelType::kSampled;
-    }
-    uint32_t flags() const override {
-        return flags_;
-    }
-    const std::vector<SampledPoint2>& samples() const {
-        return samples_;
-    }
+    double duration() const override { return duration_; }
+    TrajectoryModelType type() const override { return TrajectoryModelType::kSampled; }
+    uint32_t flags() const override { return flags_; }
+    const std::vector<SampledPoint2>& samples() const { return samples_; }
 
-   private:
+  private:
     std::vector<SampledPoint2> samples_;
     double duration_{0.0};
     uint32_t flags_{kFlagNone};
 };
 
 class TrajectoryValidator2 final {
-   public:
-    static uint32_t validate(const TrajectoryEvaluator2& evaluator, const TrajectoryLimits2& limits,
-                             double sample_dt);
+  public:
+    static uint32_t validate(const TrajectoryEvaluator2& evaluator, const TrajectoryLimits2& limits, double sample_dt);
     static bool finite(const PlanarReference2& output);
 };
 
 inline void completePlanarReference2(PlanarReference2& output);
 std::unique_ptr<TrajectoryEvaluator2> cloneEvaluator(const TrajectoryEvaluator2& evaluator);
 
-}  // namespace xgc2_math::trajectory
-
+} // namespace xgc2_math::trajectory
 
 #include <algorithm>
 #include <cmath>
@@ -192,8 +172,8 @@ inline double polyValue(const std::vector<double>& coeffs, double t, int derivat
     return value;
 }
 
-inline std::vector<double> septicBoundary(double p0, double v0, double a0, double j0, double p1, double v1,
-                                   double a1, double j1, double duration) {
+inline std::vector<double> septicBoundary(double p0, double v0, double a0, double j0, double p1, double v1, double a1,
+                                          double j1, double duration) {
     const double T = std::max(kMinDuration, duration);
     std::vector<double> c(8, 0.0);
     c[0] = p0;
@@ -209,11 +189,10 @@ inline std::vector<double> septicBoundary(double p0, double v0, double a0, doubl
     const double T5 = T4 * T;
     const double T6 = T5 * T;
     const double T7 = T6 * T;
-    A << T4, T5, T6, T7, 4.0 * T3, 5.0 * T4, 6.0 * T5, 7.0 * T6, 12.0 * T2, 20.0 * T3, 30.0 * T4,
-        42.0 * T5, 24.0 * T, 60.0 * T2, 120.0 * T3, 210.0 * T4;
-    b << p1 - (c[0] + c[1] * T + c[2] * T2 + c[3] * T3),
-        v1 - (c[1] + 2.0 * c[2] * T + 3.0 * c[3] * T2), a1 - (2.0 * c[2] + 6.0 * c[3] * T),
-        j1 - (6.0 * c[3]);
+    A << T4, T5, T6, T7, 4.0 * T3, 5.0 * T4, 6.0 * T5, 7.0 * T6, 12.0 * T2, 20.0 * T3, 30.0 * T4, 42.0 * T5, 24.0 * T,
+        60.0 * T2, 120.0 * T3, 210.0 * T4;
+    b << p1 - (c[0] + c[1] * T + c[2] * T2 + c[3] * T3), v1 - (c[1] + 2.0 * c[2] * T + 3.0 * c[3] * T2),
+        a1 - (2.0 * c[2] + 6.0 * c[3] * T), j1 - (6.0 * c[3]);
     const Eigen::Vector4d tail = A.colPivHouseholderQr().solve(b);
     for (int i = 0; i < 4; ++i) {
         c[static_cast<size_t>(i) + 4U] = tail(i);
@@ -221,8 +200,7 @@ inline std::vector<double> septicBoundary(double p0, double v0, double a0, doubl
     return c;
 }
 
-inline bool segmentAt(const std::vector<PolynomialSegment2>& segments, double t, size_t& index,
-               double& local_t) {
+inline bool segmentAt(const std::vector<PolynomialSegment2>& segments, double t, size_t& index, double& local_t) {
     if (segments.empty() || !finiteScalar(t)) {
         return false;
     }
@@ -255,8 +233,7 @@ inline uint32_t limitFlags(const PlanarReference2& output, const TrajectoryLimit
     if (limits.max_velocity > 0.0 && std::abs(output.speed) > limits.max_velocity) {
         flags |= kFlagVelocityLimit;
     }
-    if (limits.max_acceleration > 0.0 &&
-        std::abs(output.linear_acceleration) > limits.max_acceleration) {
+    if (limits.max_acceleration > 0.0 && std::abs(output.linear_acceleration) > limits.max_acceleration) {
         flags |= kFlagAccelerationLimit;
     }
     if (limits.max_yaw_rate > 0.0 && std::abs(output.yaw_rate) > limits.max_yaw_rate) {
@@ -265,7 +242,7 @@ inline uint32_t limitFlags(const PlanarReference2& output, const TrajectoryLimit
     return flags;
 }
 
-}  // namespace trajectory2_detail
+} // namespace trajectory2_detail
 
 inline void completePlanarReference2(PlanarReference2& output) {
     const double speed = output.velocity.norm();
@@ -291,20 +268,19 @@ inline void completePlanarReference2(PlanarReference2& output) {
     output.speed = speed;
     output.linear_acceleration = (vx * ax + vy * ay) / speed;
     output.yaw_rate = cross_va / speed_sq;
-    output.yaw_acceleration =
-        (cross_vj * speed_sq - cross_va * speed_sq_dot) / (speed_sq * speed_sq);
+    output.yaw_acceleration = (cross_vj * speed_sq - cross_va * speed_sq_dot) / (speed_sq * speed_sq);
     output.curvature = output.yaw_rate / speed;
 }
 
-inline bool PiecewisePolynomialEvaluator2::setSegments(std::vector<PolynomialSegment2> segments,
-                                               uint8_t order) {
+inline bool PiecewisePolynomialEvaluator2::setSegments(std::vector<PolynomialSegment2> segments, uint8_t order) {
     if (segments.empty() || order == 0U) {
         flags_ |= kFlagInvalidInput;
         return false;
     }
     total_duration_ = 0.0;
     for (const auto& segment : segments) {
-        if (!trajectory2_detail::finiteScalar(segment.duration) || segment.duration <= trajectory2_detail::kMinDuration ||
+        if (!trajectory2_detail::finiteScalar(segment.duration) ||
+            segment.duration <= trajectory2_detail::kMinDuration ||
             segment.x.size() != static_cast<size_t>(order) + 1U ||
             segment.y.size() != static_cast<size_t>(order) + 1U ||
             (!segment.yaw.empty() && segment.yaw.size() != static_cast<size_t>(order) + 1U)) {
@@ -327,10 +303,14 @@ inline bool PiecewisePolynomialEvaluator2::evaluate(double t, PlanarReference2& 
     }
     const auto& segment = segments_[index];
     output = PlanarReference2{};
-    output.position << trajectory2_detail::polyValue(segment.x, local_t, 0), trajectory2_detail::polyValue(segment.y, local_t, 0);
-    output.velocity << trajectory2_detail::polyValue(segment.x, local_t, 1), trajectory2_detail::polyValue(segment.y, local_t, 1);
-    output.acceleration << trajectory2_detail::polyValue(segment.x, local_t, 2), trajectory2_detail::polyValue(segment.y, local_t, 2);
-    output.jerk << trajectory2_detail::polyValue(segment.x, local_t, 3), trajectory2_detail::polyValue(segment.y, local_t, 3);
+    output.position << trajectory2_detail::polyValue(segment.x, local_t, 0),
+        trajectory2_detail::polyValue(segment.y, local_t, 0);
+    output.velocity << trajectory2_detail::polyValue(segment.x, local_t, 1),
+        trajectory2_detail::polyValue(segment.y, local_t, 1);
+    output.acceleration << trajectory2_detail::polyValue(segment.x, local_t, 2),
+        trajectory2_detail::polyValue(segment.y, local_t, 2);
+    output.jerk << trajectory2_detail::polyValue(segment.x, local_t, 3),
+        trajectory2_detail::polyValue(segment.y, local_t, 3);
     if (!segment.yaw.empty()) {
         output.yaw = trajectory2_detail::wrapAngle(trajectory2_detail::polyValue(segment.yaw, local_t, 0));
         output.yaw_rate = trajectory2_detail::polyValue(segment.yaw, local_t, 1);
@@ -348,8 +328,8 @@ inline bool PiecewisePolynomialEvaluator2::evaluate(double t, PlanarReference2& 
     return TrajectoryValidator2::finite(output);
 }
 
-inline bool MincoWaypointSolver2::solve(const WaypointProblem2& problem,
-                                PiecewisePolynomialEvaluator2& evaluator, uint32_t* flags) const {
+inline bool MincoWaypointSolver2::solve(const WaypointProblem2& problem, PiecewisePolynomialEvaluator2& evaluator,
+                                        uint32_t* flags) const {
     uint32_t local_flags = problem.flags;
     if (problem.constraints.size() < 2U) {
         local_flags |= kFlagInvalidInput;
@@ -363,8 +343,7 @@ inline bool MincoWaypointSolver2::solve(const WaypointProblem2& problem,
     if (times.empty()) {
         times.reserve(problem.constraints.size() - 1U);
         for (size_t i = 0; i + 1U < problem.constraints.size(); ++i) {
-            const double distance =
-                (problem.constraints[i + 1U].position - problem.constraints[i].position).norm();
+            const double distance = (problem.constraints[i + 1U].position - problem.constraints[i].position).norm();
             const double speed = std::max(0.1, problem.desired_speed);
             times.push_back(std::max(problem.min_segment_time, distance / speed));
         }
@@ -386,8 +365,7 @@ inline bool MincoWaypointSolver2::solve(const WaypointProblem2& problem,
     accelerations.back() = problem.end_acceleration;
     for (size_t i = 1; i + 1U < count; ++i) {
         const double dt = std::max(trajectory2_detail::kMinDuration, times[i - 1U] + times[i]);
-        velocities[i] =
-            (problem.constraints[i + 1U].position - problem.constraints[i - 1U].position) / dt;
+        velocities[i] = (problem.constraints[i + 1U].position - problem.constraints[i - 1U].position) / dt;
     }
 
     std::vector<PolynomialSegment2> segments;
@@ -405,7 +383,7 @@ inline bool MincoWaypointSolver2::solve(const WaypointProblem2& problem,
         segment.x = trajectory2_detail::septicBoundary(p0.x(), v0.x(), a0.x(), 0.0, p1.x(), v1.x(), a1.x(), 0.0, T);
         segment.y = trajectory2_detail::septicBoundary(p0.y(), v0.y(), a0.y(), 0.0, p1.y(), v1.y(), a1.y(), 0.0, T);
         segment.yaw = trajectory2_detail::septicBoundary(problem.constraints[i].yaw, 0.0, 0.0, 0.0,
-                                     problem.constraints[i + 1U].yaw, 0.0, 0.0, 0.0, T);
+                                                         problem.constraints[i + 1U].yaw, 0.0, 0.0, 0.0, T);
         segments.push_back(std::move(segment));
     }
     const bool ok = evaluator.setSegments(std::move(segments), 7U);
@@ -421,8 +399,9 @@ inline bool SampledEvaluator2::setSamples(std::vector<SampledPoint2> samples) {
         flags_ |= kFlagInvalidInput;
         return false;
     }
-    std::sort(samples.begin(), samples.end(),
-              [](const SampledPoint2& lhs, const SampledPoint2& rhs) { return lhs.t < rhs.t; });
+    std::sort(samples.begin(), samples.end(), [](const SampledPoint2& lhs, const SampledPoint2& rhs) {
+        return lhs.t < rhs.t;
+    });
     double last_t = -1.0;
     for (auto& sample : samples) {
         completePlanarReference2(sample.reference);
@@ -460,8 +439,7 @@ inline bool SampledEvaluator2::evaluate(double t, PlanarReference2& output) cons
         const double ratio = (t - a.t) / std::max(trajectory2_detail::kMinDuration, b.t - a.t);
         output.position = (1.0 - ratio) * a.reference.position + ratio * b.reference.position;
         output.velocity = (1.0 - ratio) * a.reference.velocity + ratio * b.reference.velocity;
-        output.acceleration =
-            (1.0 - ratio) * a.reference.acceleration + ratio * b.reference.acceleration;
+        output.acceleration = (1.0 - ratio) * a.reference.acceleration + ratio * b.reference.acceleration;
         output.jerk = (1.0 - ratio) * a.reference.jerk + ratio * b.reference.jerk;
         output.yaw = a.reference.yaw + trajectory2_detail::wrapAngle(b.reference.yaw - a.reference.yaw) * ratio;
         completePlanarReference2(output);
@@ -472,8 +450,8 @@ inline bool SampledEvaluator2::evaluate(double t, PlanarReference2& output) cons
     return false;
 }
 
-inline uint32_t TrajectoryValidator2::validate(const TrajectoryEvaluator2& evaluator,
-                                       const TrajectoryLimits2& limits, double sample_dt) {
+inline uint32_t TrajectoryValidator2::validate(const TrajectoryEvaluator2& evaluator, const TrajectoryLimits2& limits,
+                                               double sample_dt) {
     uint32_t flags = evaluator.flags();
     const double duration = evaluator.duration();
     if (!trajectory2_detail::finiteScalar(duration) || duration < 0.0) {
@@ -497,8 +475,10 @@ inline bool TrajectoryValidator2::finite(const PlanarReference2& output) {
     return trajectory2_detail::finiteVector(output.position) && trajectory2_detail::finiteVector(output.velocity) &&
            trajectory2_detail::finiteVector(output.acceleration) && trajectory2_detail::finiteVector(output.jerk) &&
            trajectory2_detail::finiteScalar(output.yaw) && trajectory2_detail::finiteScalar(output.speed) &&
-           trajectory2_detail::finiteScalar(output.linear_acceleration) && trajectory2_detail::finiteScalar(output.yaw_rate) &&
-           trajectory2_detail::finiteScalar(output.yaw_acceleration) && trajectory2_detail::finiteScalar(output.curvature);
+           trajectory2_detail::finiteScalar(output.linear_acceleration) &&
+           trajectory2_detail::finiteScalar(output.yaw_rate) &&
+           trajectory2_detail::finiteScalar(output.yaw_acceleration) &&
+           trajectory2_detail::finiteScalar(output.curvature);
 }
 
 inline std::unique_ptr<TrajectoryEvaluator2> cloneEvaluator(const TrajectoryEvaluator2& evaluator) {
@@ -521,4 +501,4 @@ inline std::unique_ptr<TrajectoryEvaluator2> cloneEvaluator(const TrajectoryEval
     return nullptr;
 }
 
-}  // namespace xgc2_math::trajectory
+} // namespace xgc2_math::trajectory
