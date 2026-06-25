@@ -17,7 +17,7 @@ class ExponentialLowPass {
     }
 
     void reset(double cutoff_frequency_hz, double initial_value = 0.0) {
-        cutoff_frequency_hz_ = std::isfinite(cutoff_frequency_hz) ? std::max(0.0, cutoff_frequency_hz) : 0.0;
+        setCutoffFrequencyHz(cutoff_frequency_hz);
         resetState(initial_value);
     }
 
@@ -26,8 +26,13 @@ class ExponentialLowPass {
     }
 
     void resetState(double value = 0.0) {
-        value_ = value;
-        initialized_ = true;
+        if (std::isfinite(value)) {
+            value_ = value;
+            initialized_ = true;
+            return;
+        }
+        value_ = 0.0;
+        initialized_ = false;
     }
 
     double filter(double input, double dt_s) {
@@ -37,15 +42,20 @@ class ExponentialLowPass {
 
         if (!initialized_) {
             resetState(input);
-            return input;
+            return value_;
         }
 
-        if (cutoff_frequency_hz_ <= 0.0 || dt_s <= 0.0 || !std::isfinite(dt_s)) {
+        // A non-positive cutoff disables filtering and follows the latest valid input.
+        if (cutoff_frequency_hz_ <= 0.0) {
             resetState(input);
-            return input;
+            return value_;
         }
 
-        const double alpha = 1.0 - std::exp(-kTwoPi * cutoff_frequency_hz_ * dt_s);
+        if (dt_s <= 0.0 || !std::isfinite(dt_s)) {
+            return value_;
+        }
+
+        const double alpha = -std::expm1(-kTwoPi * cutoff_frequency_hz_ * dt_s);
         value_ += alpha * (input - value_);
         return value_;
     }

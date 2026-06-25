@@ -41,6 +41,37 @@ void testButterworth() {
 
     const double held = filter.filter(std::numeric_limits<double>::quiet_NaN(), 0.01);
     expect(std::isfinite(held));
+    expect(held == filter.value());
+
+    const double before_bad_dt = filter.value();
+    expect(filter.filter(10.0, 0.0) == before_bad_dt);
+    expect(filter.filter(10.0, -0.01) == before_bad_dt);
+    expect(filter.filter(10.0, std::numeric_limits<double>::quiet_NaN()) == before_bad_dt);
+    expect(filter.filter(10.0, std::numeric_limits<double>::infinity()) == before_bad_dt);
+
+    xgc2_math::SecondOrderButterworthLowPass invalid_cutoff(std::numeric_limits<double>::quiet_NaN(), 2.0);
+    expect(invalid_cutoff.filter(4.0, 0.01) == 4.0);
+    expect(invalid_cutoff.value() == 4.0);
+    invalid_cutoff.setCutoffFrequencyHz(std::numeric_limits<double>::infinity());
+    expect(invalid_cutoff.filter(6.0, 0.01) == 6.0);
+
+    filter.resetState(std::numeric_limits<double>::quiet_NaN());
+    expect(filter.initialized());
+    expect(filter.value() == 0.0);
+    expect(std::isfinite(filter.filter(1.0, 0.01)));
+
+    xgc2_math::SecondOrderButterworthLowPass retuned_filter(1.0, 0.0);
+    retuned_filter.filter(1.0, 0.01);
+    const double before_retune = retuned_filter.value();
+    retuned_filter.setCutoffFrequencyHz(10.0);
+    expect(retuned_filter.cutoffFrequencyHz() == 10.0);
+    expect(retuned_filter.value() == before_retune);
+    expect(std::isfinite(retuned_filter.filter(2.0, 0.01)));
+
+    xgc2_math::SecondOrderButterworthLowPass overflow_filter(5.0, 0.0);
+    overflow_filter.resetState(std::numeric_limits<double>::max());
+    expect(overflow_filter.filter(1.0, 0.01) == 1.0);
+    expect(overflow_filter.value() == 1.0);
 }
 
 void testExponentialLowPass() {
@@ -54,18 +85,67 @@ void testExponentialLowPass() {
 
     const double held = filter.filter(std::numeric_limits<double>::quiet_NaN(), 0.02);
     expect(held == filter.value());
+
+    const double before_bad_dt = filter.value();
+    expect(filter.filter(10.0, 0.0) == before_bad_dt);
+    expect(filter.filter(10.0, -0.01) == before_bad_dt);
+    expect(filter.filter(10.0, std::numeric_limits<double>::quiet_NaN()) == before_bad_dt);
+    expect(filter.filter(10.0, std::numeric_limits<double>::infinity()) == before_bad_dt);
+
+    xgc2_math::ExponentialLowPass invalid_initial(2.0, std::numeric_limits<double>::quiet_NaN());
+    expect(!invalid_initial.initialized());
+    expect(invalid_initial.value() == 0.0);
+    expect(invalid_initial.filter(3.0, 0.02) == 3.0);
+    expect(invalid_initial.initialized());
+
+    xgc2_math::ExponentialLowPass bypass(0.0, 1.0);
+    expect(bypass.filter(5.0, 0.02) == 5.0);
+    expect(bypass.value() == 5.0);
+    bypass.setCutoffFrequencyHz(-1.0);
+    expect(bypass.cutoffFrequencyHz() == 0.0);
+    expect(bypass.filter(7.0, std::numeric_limits<double>::quiet_NaN()) == 7.0);
+
+    xgc2_math::ExponentialLowPass step_filter(1.0, 0.0);
+    const double first = step_filter.filter(1.0, 0.001);
+    const double second = step_filter.filter(1.0, 0.001);
+    expect(first > 0.0);
+    expect(second > first);
+    expect(second < 1.0);
 }
 
 void testSlewRateLimiter() {
     xgc2_math::SlewRateLimiter limiter(0.5, 0.0);
 
     expect(std::fabs(limiter.filter(10.0, 0.2) - 0.1) < 1.0e-12);
-    expect(std::fabs(limiter.filter(-10.0, 0.2) - 0.0) < 1.0e-12);
-    const double held = limiter.filter(std::numeric_limits<double>::quiet_NaN(), 0.2);
-    expect(held == limiter.value());
+    const double before_bad_dt = limiter.value();
+    expect(limiter.filter(10.0, 0.0) == before_bad_dt);
+    expect(limiter.filter(10.0, -0.01) == before_bad_dt);
+    expect(limiter.filter(10.0, std::numeric_limits<double>::quiet_NaN()) == before_bad_dt);
+    expect(limiter.filter(10.0, std::numeric_limits<double>::infinity()) == before_bad_dt);
+    expect(limiter.filter(std::numeric_limits<double>::quiet_NaN(), 0.2) == before_bad_dt);
 
-    limiter.setMaxRatePerSecond(0.0);
-    expect(std::fabs(limiter.filter(2.0, 0.2) - 2.0) < 1.0e-12);
+    expect(std::fabs(limiter.filter(-10.0, 0.2) - 0.0) < 1.0e-12);
+
+    xgc2_math::SlewRateLimiter invalid_initial(0.5, std::numeric_limits<double>::quiet_NaN());
+    expect(!invalid_initial.initialized());
+    expect(invalid_initial.value() == 0.0);
+    expect(invalid_initial.filter(3.0, 0.2) == 3.0);
+    expect(invalid_initial.initialized());
+
+    xgc2_math::SlewRateLimiter frozen(0.0, 1.0);
+    expect(frozen.filter(2.0, 0.2) == 1.0);
+    frozen.setMaxRatePerSecond(-1.0);
+    expect(frozen.maxRatePerSecond() == 0.0);
+    expect(frozen.filter(3.0, 0.2) == 1.0);
+    frozen.setMaxRatePerSecond(std::numeric_limits<double>::quiet_NaN());
+    expect(frozen.maxRatePerSecond() == 0.0);
+    expect(frozen.filter(4.0, 0.2) == 1.0);
+    frozen.setMaxRatePerSecond(std::numeric_limits<double>::infinity());
+    expect(frozen.maxRatePerSecond() == 0.0);
+    expect(frozen.filter(5.0, 0.2) == 1.0);
+
+    xgc2_math::SlewRateLimiter overflow_filter(std::numeric_limits<double>::max(), 2.0);
+    expect(overflow_filter.filter(3.0, std::numeric_limits<double>::max()) == 2.0);
 }
 
 void testStatusHelpers() {

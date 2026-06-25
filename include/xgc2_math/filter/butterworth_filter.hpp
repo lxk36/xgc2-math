@@ -15,11 +15,16 @@ class SecondOrderButterworthLowPass {
     }
 
     void reset(double cutoff_frequency_hz, double initial_value = 0.0) {
-        cutoff_frequency_hz_ = cutoff_frequency_hz;
+        setCutoffFrequencyHz(cutoff_frequency_hz);
         resetState(initial_value);
     }
 
+    void setCutoffFrequencyHz(double cutoff_frequency_hz) { cutoff_frequency_hz_ = cutoff_frequency_hz; }
+
     void resetState(double value = 0.0) {
+        if (!std::isfinite(value)) {
+            value = 0.0;
+        }
         x1_ = value;
         x2_ = value;
         y1_ = value;
@@ -33,17 +38,26 @@ class SecondOrderButterworthLowPass {
         }
 
         if (!initialized_) {
-            reset(cutoff_frequency_hz_, input);
-            return input;
+            resetState(input);
+            return y1_;
         }
 
-        if (cutoff_frequency_hz_ <= 0.0 || dt_s <= 0.0 || !std::isfinite(dt_s)) {
+        if (!std::isfinite(cutoff_frequency_hz_) || cutoff_frequency_hz_ <= 0.0) {
             resetState(input);
-            return input;
+            return y1_;
+        }
+
+        if (!std::isfinite(dt_s) || dt_s <= 0.0) {
+            return y1_;
         }
 
         const Coefficients c = coefficients(cutoff_frequency_hz_, dt_s);
         const double output = c.b0 * input + c.b1 * x1_ + c.b2 * x2_ - c.a1 * y1_ - c.a2 * y2_;
+        if (!std::isfinite(output)) {
+            resetState(input);
+            return y1_;
+        }
+
         x2_ = x1_;
         x1_ = input;
         y2_ = y1_;
@@ -72,6 +86,9 @@ class SecondOrderButterworthLowPass {
 
         const double sample_frequency_hz = 1.0 / dt_s;
         const double nyquist_hz = 0.5 * sample_frequency_hz;
+        // Conservative stability margin: clamp cutoff to 45% of Nyquist.
+        // Bilinear transform with K = tan(pi * fc / fs) for:
+        // y[n] = b0*x[n] + b1*x[n-1] + b2*x[n-2] - a1*y[n-1] - a2*y[n-2].
         const double cutoff_hz = std::max(1.0e-9, std::min(cutoff_frequency_hz, 0.45 * nyquist_hz));
         const double warped = std::tan(kFilterPi * cutoff_hz / sample_frequency_hz);
         const double warped2 = warped * warped;

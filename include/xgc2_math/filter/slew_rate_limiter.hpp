@@ -24,6 +24,12 @@ class SlewRateLimiter {
     }
 
     void resetState(double value = 0.0) {
+        if (!std::isfinite(value)) {
+            value_ = 0.0;
+            initialized_ = false;
+            return;
+        }
+
         value_ = value;
         initialized_ = true;
     }
@@ -34,14 +40,20 @@ class SlewRateLimiter {
         }
         if (!initialized_) {
             resetState(input);
-            return input;
+            return value_;
         }
-        if (max_rate_per_second_ <= 0.0 || !std::isfinite(dt_s) || dt_s <= 0.0) {
-            resetState(input);
-            return input;
+        if (!std::isfinite(dt_s) || dt_s <= 0.0) {
+            return value_;
+        }
+        if (max_rate_per_second_ <= 0.0) {
+            return value_;
         }
 
         const double max_delta = max_rate_per_second_ * dt_s;
+        if (!std::isfinite(max_delta)) {
+            return value_;
+        }
+
         value_ += std::clamp(input - value_, -max_delta, max_delta);
         return value_;
     }
