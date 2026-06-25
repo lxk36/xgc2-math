@@ -978,7 +978,8 @@ void testPose3InertialEskfFixedOfflineExtrinsic() {
 
     const auto imu0 = InertialPoseTestSamples::inertial(1.0);
     eskf.initializeFromPose(initial_pose, &imu0);
-    expect(xgc2_math::Pose3InertialEskf::kErrorStateDim == 15);
+    static_assert(xgc2_math::Pose3InertialEskf::kErrorStateDim == 15,
+                  "Pose3InertialEskf should not estimate extrinsic states online");
     expect(eskf.covariance().rows() == 15);
     expect(eskf.covariance().cols() == 15);
     expect((eskf.state().position - expected_body_world.position).norm() < 1.0e-12);
