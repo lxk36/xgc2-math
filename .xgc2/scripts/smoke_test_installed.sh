@@ -96,7 +96,7 @@ int main()
   se2_control.yaw_rate = 0.2;
   const auto se2_u = xgc2_math::control::packControl(se2_control);
 
-  return dt0.accepted && dt1.accepted &&
+  return !dt0.accepted && dt1.accepted &&
          derivative.measurement_accepted &&
          yaw_derivative.measurement_accepted &&
          estimate.measurement_accepted &&
