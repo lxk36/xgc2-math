@@ -241,10 +241,13 @@ void testOptionNormalization() {
     xgc2_math::DifferentiatorOptions bad_diff_options;
     bad_diff_options.min_dt_s = -1.0;
     bad_diff_options.max_dt_s = -2.0;
-    bad_diff_options.max_input_step = std::numeric_limits<double>::quiet_NaN();
+    bad_diff_options.max_input_step = -std::numeric_limits<double>::infinity();
+    bad_diff_options.max_derivative = -std::numeric_limits<double>::infinity();
     bad_diff_options.derivative_cutoff_hz = -3.0;
     const auto diff_options = xgc2_math::normalized(bad_diff_options);
     expect(xgc2_math::isValid(diff_options));
+    expect(diff_options.max_input_step == std::numeric_limits<double>::infinity());
+    expect(diff_options.max_derivative == std::numeric_limits<double>::infinity());
 
     xgc2_math::PositionVelocityObserverOptions bad_observer_options;
     bad_observer_options.position_gain = -1.0;
@@ -261,22 +264,86 @@ void testDifferentiator() {
     options.max_derivative = 20.0;
     options.derivative_cutoff_hz = 10.0;
 
+    xgc2_math::Differentiator default_differentiator;
+    expect(xgc2_math::isValid(default_differentiator.options()));
+
+    xgc2_math::Differentiator invalid_reset(options);
+    invalid_reset.reset(0.2, 1.0);
+    expect(invalid_reset.initialized());
+    invalid_reset.reset(std::numeric_limits<double>::quiet_NaN(), 0.0);
+    expect(!invalid_reset.initialized());
+    expect(invalid_reset.value() == 0.0);
+    expect(invalid_reset.derivative() == 0.0);
+    invalid_reset.reset(0.0, std::numeric_limits<double>::infinity());
+    expect(!invalid_reset.initialized());
+    expect(invalid_reset.value() == 0.0);
+    expect(invalid_reset.derivative() == 0.0);
+
     xgc2_math::Differentiator differentiator(options);
     auto sample = differentiator.update(0.0, 0.02);
     expect(sample.status == xgc2_math::DifferentiatorStatus::kInitialized);
+    expect(sample.measurement_accepted);
+    expect(sample.derivative == 0.0);
+
+    sample = differentiator.update(std::numeric_limits<double>::quiet_NaN(), 0.02);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidInput);
+    expect(!sample.measurement_accepted);
+    expect(differentiator.value() == 0.0);
+    expect(differentiator.derivative() == 0.0);
 
     sample = differentiator.update(0.1, 0.02);
     expect(sample.status == xgc2_math::DifferentiatorStatus::kAccepted);
     expect(sample.measurement_accepted);
 
     const double derivative = sample.derivative;
+    const double accepted_value = differentiator.value();
     sample = differentiator.update(10.0, 0.02);
     expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldOutlier);
     expect(!sample.measurement_accepted);
+    expect(differentiator.value() == accepted_value);
     expect(std::fabs(sample.derivative - derivative) < 1.0e-12);
 
     sample = differentiator.update(0.2, 0.0);
     expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    expect(!sample.measurement_accepted);
+    sample = differentiator.update(0.2, -0.01);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    sample = differentiator.update(0.2, std::numeric_limits<double>::quiet_NaN());
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    sample = differentiator.update(0.2, std::numeric_limits<double>::infinity());
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    expect(differentiator.value() == accepted_value);
+    expect(differentiator.derivative() == derivative);
+
+    xgc2_math::DifferentiatorOptions unbounded_options;
+    unbounded_options.min_dt_s = 0.001;
+    unbounded_options.max_dt_s = 0.1;
+    xgc2_math::Differentiator delta_overflow(unbounded_options);
+    delta_overflow.reset(-std::numeric_limits<double>::max(), 0.0);
+    sample = delta_overflow.update(std::numeric_limits<double>::max(), 0.02);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldOutlier);
+    expect(!sample.measurement_accepted);
+    expect(delta_overflow.value() == -std::numeric_limits<double>::max());
+    expect(delta_overflow.derivative() == 0.0);
+
+    xgc2_math::Differentiator derivative_overflow(unbounded_options);
+    derivative_overflow.reset(0.0, 0.0);
+    sample = derivative_overflow.update(std::numeric_limits<double>::max(), 0.001);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldOutlier);
+    expect(!sample.measurement_accepted);
+    expect(derivative_overflow.value() == 0.0);
+    expect(derivative_overflow.derivative() == 0.0);
+
+    xgc2_math::DifferentiatorOptions reset_options = options;
+    reset_options.reset_on_large_dt = true;
+    xgc2_math::Differentiator reset_on_large_dt(reset_options);
+    sample = reset_on_large_dt.update(0.0, 0.02);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kInitialized);
+    sample = reset_on_large_dt.update(2.0, 0.2);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kInitialized);
+    expect(sample.measurement_accepted);
+    expect(reset_on_large_dt.value() == 2.0);
+    expect(reset_on_large_dt.derivative() == 0.0);
 }
 
 void testAngleUtilitiesAndDifferentiator() {
@@ -288,16 +355,82 @@ void testAngleUtilitiesAndDifferentiator() {
     expect(std::fabs(delta - 0.02) < 1.0e-12);
 
     xgc2_math::DifferentiatorOptions options;
+    options.min_dt_s = 0.001;
+    options.max_dt_s = 0.1;
     options.max_input_step = 0.1;
     options.max_derivative = 10.0;
+
+    xgc2_math::AngleDifferentiator default_differentiator;
+    expect(xgc2_math::isValid(default_differentiator.options()));
+
+    xgc2_math::AngleDifferentiator invalid_reset(options);
+    invalid_reset.reset(0.2, 1.0);
+    expect(invalid_reset.initialized());
+    invalid_reset.reset(std::numeric_limits<double>::quiet_NaN(), 0.0);
+    expect(!invalid_reset.initialized());
+    expect(invalid_reset.value() == 0.0);
+    expect(invalid_reset.derivative() == 0.0);
+    invalid_reset.reset(0.0, std::numeric_limits<double>::infinity());
+    expect(!invalid_reset.initialized());
+    expect(invalid_reset.value() == 0.0);
+    expect(invalid_reset.derivative() == 0.0);
 
     xgc2_math::AngleDifferentiator differentiator(options);
     auto sample = differentiator.update(from, 0.02);
     expect(sample.status == xgc2_math::DifferentiatorStatus::kInitialized);
+    expect(sample.measurement_accepted);
+    expect(sample.derivative == 0.0);
+
+    const double initialized_angle = differentiator.value();
+    sample = differentiator.update(std::numeric_limits<double>::quiet_NaN(), 0.02);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidInput);
+    expect(!sample.measurement_accepted);
+    expect(differentiator.value() == initialized_angle);
+    expect(differentiator.derivative() == 0.0);
 
     sample = differentiator.update(to, 0.02);
     expect(sample.status == xgc2_math::DifferentiatorStatus::kAccepted);
+    expect(sample.measurement_accepted);
     expect(std::fabs(sample.derivative - 1.0) < 1.0e-12);
+
+    const double accepted_angle = differentiator.value();
+    const double accepted_derivative = differentiator.derivative();
+    sample = differentiator.update(accepted_angle + 0.01, 0.0);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    expect(!sample.measurement_accepted);
+    expect(differentiator.value() == accepted_angle);
+    expect(differentiator.derivative() == accepted_derivative);
+    sample = differentiator.update(accepted_angle + 0.01, -0.01);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    sample = differentiator.update(accepted_angle + 0.01, std::numeric_limits<double>::quiet_NaN());
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    sample = differentiator.update(accepted_angle + 0.01, std::numeric_limits<double>::infinity());
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldInvalidDt);
+    expect(differentiator.value() == accepted_angle);
+    expect(differentiator.derivative() == accepted_derivative);
+
+    sample = differentiator.update(accepted_angle + 0.2, 0.02);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldOutlier);
+    expect(!sample.measurement_accepted);
+    expect(differentiator.value() == accepted_angle);
+    expect(differentiator.derivative() == accepted_derivative);
+
+    sample = differentiator.update(accepted_angle + 0.08, 0.001);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kHeldOutlier);
+    expect(!sample.measurement_accepted);
+    expect(differentiator.value() == accepted_angle);
+    expect(differentiator.derivative() == accepted_derivative);
+
+    auto reset_options = options;
+    reset_options.reset_on_large_dt = true;
+    xgc2_math::AngleDifferentiator reset_on_large_dt(reset_options);
+    sample = reset_on_large_dt.update(from, 0.02);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kInitialized);
+    sample = reset_on_large_dt.update(to, 0.2);
+    expect(sample.status == xgc2_math::DifferentiatorStatus::kInitialized);
+    expect(sample.measurement_accepted);
+    expect(std::fabs(reset_on_large_dt.value() - to) < 1.0e-12);
+    expect(reset_on_large_dt.derivative() == 0.0);
 }
 
 void testPositionVelocityObserver() {
@@ -350,6 +483,20 @@ void testArrayWrappers() {
     samples = differentiator.update(p1, 0.1);
     expect(samples[0].status == xgc2_math::DifferentiatorStatus::kAccepted);
     expect(std::fabs(samples[2].derivative - 3.0) < 1.0e-12);
+
+    std::array<double, 3> reset_values{{1.0, std::numeric_limits<double>::quiet_NaN(), 3.0}};
+    differentiator.reset(reset_values);
+    expect(differentiator.axis(0).initialized());
+    expect(differentiator.axis(0).value() == 1.0);
+    expect(!differentiator.axis(1).initialized());
+    expect(differentiator.axis(1).value() == 0.0);
+    expect(differentiator.axis(1).derivative() == 0.0);
+    expect(differentiator.axis(2).initialized());
+    expect(differentiator.axis(2).value() == 3.0);
+    samples = differentiator.update(p1, 0.1);
+    expect(samples[0].status == xgc2_math::DifferentiatorStatus::kAccepted);
+    expect(samples[1].status == xgc2_math::DifferentiatorStatus::kInitialized);
+    expect(samples[2].status == xgc2_math::DifferentiatorStatus::kAccepted);
 
     xgc2_math::ArrayPositionVelocityLuenbergerObserver<3> observer;
     auto estimates = observer.update(p0, 0.02);

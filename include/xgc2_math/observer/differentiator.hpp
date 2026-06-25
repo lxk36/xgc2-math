@@ -30,7 +30,7 @@ template <> struct StatusRegistry<DifferentiatorStatus> {
 };
 
 inline bool isNonnegativeLimit(double value) {
-    return std::isinf(value) || (std::isfinite(value) && value >= 0.0);
+    return value == std::numeric_limits<double>::infinity() || (std::isfinite(value) && value >= 0.0);
 }
 
 struct DifferentiatorOptions {
@@ -78,9 +78,11 @@ struct DifferentiatorSample {
 
 class Differentiator {
   public:
-    Differentiator() = default;
+    Differentiator() : Differentiator(DifferentiatorOptions{}) {}
 
-    explicit Differentiator(const DifferentiatorOptions& options) : options_(normalized(options)) {}
+    explicit Differentiator(const DifferentiatorOptions& options) : options_(normalized(options)) {
+        derivative_filter_.reset(options_.derivative_cutoff_hz, derivative_);
+    }
 
     void setOptions(const DifferentiatorOptions& options) {
         options_ = normalized(options);
@@ -97,12 +99,19 @@ class Differentiator {
     }
 
     void reset(double value, double derivative = 0.0) {
+        if (!std::isfinite(value) || !std::isfinite(derivative)) {
+            reset();
+            return;
+        }
+
         initialized_ = true;
         value_ = value;
         derivative_ = derivative;
         derivative_filter_.reset(options_.derivative_cutoff_hz, derivative);
     }
 
+    // dt_s is elapsed time since the last accepted or reinitialized sample.
+    // Use TimeDeltaGuard upstream when deriving dt_s from wall-clock timestamps.
     DifferentiatorSample update(double value, double dt_s) {
         if (!std::isfinite(value)) {
             return sample(DifferentiatorStatus::kHeldInvalidInput, false);
@@ -122,11 +131,17 @@ class Differentiator {
         }
 
         const double delta = value - value_;
+        if (!std::isfinite(delta)) {
+            return sample(DifferentiatorStatus::kHeldOutlier, false);
+        }
         if (std::fabs(delta) > options_.max_input_step) {
             return sample(DifferentiatorStatus::kHeldOutlier, false);
         }
 
         const double raw_derivative = delta / dt_s;
+        if (!std::isfinite(raw_derivative)) {
+            return sample(DifferentiatorStatus::kHeldOutlier, false);
+        }
         if (std::fabs(raw_derivative) > options_.max_derivative) {
             return sample(DifferentiatorStatus::kHeldOutlier, false);
         }
@@ -145,7 +160,7 @@ class Differentiator {
 
   private:
     bool validDt(double dt_s) const {
-        return std::isfinite(dt_s) && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
+        return std::isfinite(dt_s) && dt_s > 0.0 && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
     }
 
     DifferentiatorSample sample(DifferentiatorStatus status, bool accepted) const {

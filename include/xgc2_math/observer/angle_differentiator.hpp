@@ -10,9 +10,11 @@ namespace xgc2_math {
 
 class AngleDifferentiator {
   public:
-    AngleDifferentiator() = default;
+    AngleDifferentiator() : AngleDifferentiator(DifferentiatorOptions{}) {}
 
-    explicit AngleDifferentiator(const DifferentiatorOptions& options) : options_(normalized(options)) {}
+    explicit AngleDifferentiator(const DifferentiatorOptions& options) : options_(normalized(options)) {
+        derivative_filter_.reset(options_.derivative_cutoff_hz, derivative_);
+    }
 
     void setOptions(const DifferentiatorOptions& options) {
         options_ = normalized(options);
@@ -29,12 +31,19 @@ class AngleDifferentiator {
     }
 
     void reset(double angle_rad, double derivative = 0.0) {
+        if (!std::isfinite(angle_rad) || !std::isfinite(derivative)) {
+            reset();
+            return;
+        }
+
         initialized_ = true;
         angle_rad_ = normalizeAngle(angle_rad);
         derivative_ = derivative;
         derivative_filter_.reset(options_.derivative_cutoff_hz, derivative);
     }
 
+    // dt_s is elapsed time since the last accepted or reinitialized sample.
+    // Use TimeDeltaGuard upstream when deriving dt_s from wall-clock timestamps.
     DifferentiatorSample update(double angle_rad, double dt_s) {
         if (!std::isfinite(angle_rad)) {
             return sample(DifferentiatorStatus::kHeldInvalidInput, false);
@@ -78,7 +87,7 @@ class AngleDifferentiator {
 
   private:
     bool validDt(double dt_s) const {
-        return std::isfinite(dt_s) && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
+        return std::isfinite(dt_s) && dt_s > 0.0 && dt_s >= options_.min_dt_s && dt_s <= options_.max_dt_s;
     }
 
     DifferentiatorSample sample(DifferentiatorStatus status, bool accepted) const {
