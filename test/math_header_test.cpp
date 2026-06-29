@@ -1148,6 +1148,39 @@ void testTrajectoryAndNmpcProblemContracts() {
     expect(figure_eight.evaluate(0.5, planar_ref));
     expect(xgc2_math::trajectory::TrajectoryValidator2::finite(planar_ref));
 
+    xgc2_math::trajectory::LineCurveParameters3 line_params;
+    line_params.duration = 2.0;
+    line_params.target = Eigen::Vector3d(1.0, 2.0, 3.0);
+    xgc2_math::trajectory::LineCurveEvaluator3 line(line_params);
+    expect(line.evaluate(2.0, flat));
+    expect(flat.position.isApprox(line_params.target, 1.0e-12));
+
+    xgc2_math::trajectory::LemniscateCurveParameters3 lemniscate_params;
+    lemniscate_params.radius = 2.0;
+    lemniscate_params.omega = 0.5;
+    xgc2_math::trajectory::LemniscateCurveEvaluator3 lemniscate(lemniscate_params);
+    expect(lemniscate.evaluate(0.0, flat));
+    expect(std::fabs(flat.velocity.x() - 1.0) < 1.0e-12);
+    expect(std::fabs(flat.velocity.y() - 1.0) < 1.0e-12);
+
+    xgc2_math::trajectory::HelixCurveParameters3 helix_params;
+    helix_params.radius = 1.0;
+    helix_params.omega = 0.8;
+    helix_params.linear_scale = 5.0;
+    xgc2_math::trajectory::HelixYzCurveEvaluator3 helix_yz(helix_params);
+    expect(helix_yz.evaluate(0.0, flat));
+    expect(std::fabs(flat.velocity.x() - 0.2) < 1.0e-12);
+    xgc2_math::trajectory::HelixXyCurveEvaluator3 helix_xy(helix_params);
+    expect(helix_xy.evaluate(0.0, flat));
+    expect(std::fabs(flat.velocity.z() - 0.2) < 1.0e-12);
+
+    xgc2_math::trajectory::TorusKnotCurveParameters3 torus_params;
+    torus_params.omega = 0.6;
+    torus_params.scale = 0.4;
+    xgc2_math::trajectory::TorusKnotCurveEvaluator3 torus(torus_params);
+    expect(torus.evaluate(0.0, flat));
+    expect(flat.position.isApprox(Eigen::Vector3d(0.0, -0.4, 1.6), 1.0e-12));
+
     xgc2_math::control::Se3State se3_state;
     se3_state.position = Eigen::Vector3d(1.0, 2.0, 3.0);
     xgc2_math::control::Se3Control se3_control;
