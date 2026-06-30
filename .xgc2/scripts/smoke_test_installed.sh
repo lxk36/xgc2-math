@@ -26,7 +26,11 @@ test -f /usr/include/xgc2_math/estimation/pose3_inertial_eskf.hpp
 test -f /usr/include/xgc2_math/estimation/pose2_inertial_eskf.hpp
 test -f /usr/include/xgc2_math/optimization/minco.hpp
 test -f /usr/include/xgc2_math/trajectory/trajectory3.hpp
-test -f /usr/include/xgc2_math/trajectory/analytic/circle_entry.hpp
+test -f /usr/include/xgc2_math/trajectory/analytic/2d/circle_entry_2d.hpp
+test -f /usr/include/xgc2_math/trajectory/analytic/3d/circle_entry_3d.hpp
+test -f /usr/include/xgc2_math/trajectory/analytic/3d/helix_xy_3d.hpp
+test -f /usr/include/xgc2_math/trajectory/analytic/3d/helix_yz_3d.hpp
+test -f /usr/include/xgc2_math/trajectory/analytic/3d/torus_knot_3d.hpp
 test -f /usr/include/xgc2_math/control/se2_nmpc_problem.hpp
 test -f /usr/include/xgc2_math/control/se3_nmpc_problem.hpp
 test -f /usr/lib/cmake/xgc2_math/xgc2_mathConfig.cmake
