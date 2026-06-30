@@ -13,7 +13,7 @@ struct TorusKnotCurveParameters3 {
     uint32_t flags{kFlagNone};
     double duration{35.0};
     Eigen::Vector3d origin{Eigen::Vector3d::Zero()};
-    double omega{0.9};
+    double omega{0.3};
     double scale{0.3};
     double yaw{0.0};
 };
@@ -24,7 +24,7 @@ class TorusKnotCurveEvaluator3 final : public TrajectoryEvaluator3 {
         params_.omega = std::abs(params_.omega);
         params_.scale = std::abs(params_.scale);
         if (!analytic_detail::finiteScalar(params_.omega) || params_.omega <= 0.0) {
-            params_.omega = 0.9;
+            params_.omega = 0.3;
         }
         if (!analytic_detail::finiteScalar(params_.scale) || params_.scale <= 0.0) {
             params_.scale = 0.3;

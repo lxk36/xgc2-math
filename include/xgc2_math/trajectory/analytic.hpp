@@ -13,3 +13,4 @@
 #include "xgc2_math/trajectory/analytic/3d/lemniscate_3d.hpp"
 #include "xgc2_math/trajectory/analytic/3d/line_3d.hpp"
 #include "xgc2_math/trajectory/analytic/3d/torus_knot_3d.hpp"
+#include "xgc2_math/trajectory/analytic/3d/torus_knot_entry_3d.hpp"
