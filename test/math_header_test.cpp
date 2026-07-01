@@ -1161,6 +1161,49 @@ void testTrajectoryAndNmpcProblemContracts() {
     expect(figure_eight.evaluate(0.5, planar_ref));
     expect(xgc2_math::trajectory::TrajectoryValidator2::finite(planar_ref));
 
+    xgc2_math::trajectory::Se2TargetState2 se2_start;
+    se2_start.position = Eigen::Vector2d(0.0, 0.0);
+    se2_start.yaw = 0.0;
+    se2_start.speed = 0.0;
+    xgc2_math::trajectory::Se2TargetState2 se2_target;
+    se2_target.position = Eigen::Vector2d(2.0, 1.0);
+    se2_target.yaw = 0.5;
+
+    xgc2_math::trajectory::Se2TargetTrajectoryOptions2 se2_options;
+    se2_options.piece_count = 3;
+    se2_options.sample_dt = 0.05;
+    se2_options.validation_sample_dt = 0.05;
+    se2_options.desired_speed = 1.0;
+    se2_options.max_velocity = 5.0;
+    se2_options.max_acceleration = 10.0;
+    se2_options.max_yaw_rate = 5.0;
+    se2_options.max_iterations = 20;
+    xgc2_math::trajectory::Se2TargetTrajectoryResult2 se2_result;
+    expect(xgc2_math::trajectory::Se2MincoTargetPlanner2().plan(se2_start, se2_target, se2_options, se2_result));
+    expect(!se2_result.samples.empty());
+    expect(se2_result.samples.front().reference.position.isApprox(se2_start.position, 1.0e-9));
+    expect(se2_result.samples.back().reference.position.isApprox(se2_target.position, 1.0e-9));
+    expect(std::fabs(angle_error(se2_result.samples.back().reference.yaw, se2_target.yaw)) < 1.0e-9);
+    for (const auto& sample : se2_result.samples) {
+        expect(xgc2_math::trajectory::TrajectoryValidator2::finite(sample.reference));
+        expect(sample.reference.speed <= se2_options.max_velocity + 1.0e-6);
+        expect(std::abs(sample.reference.yaw_rate) <= se2_options.max_yaw_rate + 1.0e-6);
+        if (sample.reference.speed > 1.0e-3) {
+            const double velocity_yaw = std::atan2(sample.reference.velocity.y(), sample.reference.velocity.x());
+            expect(std::fabs(angle_error(sample.reference.yaw, velocity_yaw)) < 1.0e-9);
+        }
+    }
+
+    xgc2_math::trajectory::Se2TargetState2 yaw_target = se2_start;
+    yaw_target.yaw = 1.2;
+    xgc2_math::trajectory::Se2TargetTrajectoryResult2 yaw_result;
+    expect(xgc2_math::trajectory::Se2MincoTargetPlanner2().plan(se2_start, yaw_target, se2_options, yaw_result));
+    expect(!yaw_result.samples.empty());
+    expect(!yaw_result.optimized);
+    expect(yaw_result.samples.back().reference.position.isApprox(se2_start.position, 1.0e-12));
+    expect(std::fabs(angle_error(yaw_result.samples.back().reference.yaw, yaw_target.yaw)) < 1.0e-9);
+    expect((yaw_result.samples.back().reference.flags & xgc2_math::trajectory::kFlagLowSpeedSingularity) != 0U);
+
     xgc2_math::trajectory::LineCurveParameters3 line_params;
     line_params.duration = 2.0;
     line_params.target = Eigen::Vector3d(1.0, 2.0, 3.0);
